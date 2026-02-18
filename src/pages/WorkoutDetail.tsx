@@ -54,10 +54,17 @@ export default function WorkoutDetail() {
       </button>
 
       <h1 className="text-xl font-semibold">{session.phase_days?.workout_name || "Workout"}</h1>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-2">
         {format(new Date(session.date), "EEEE, MMMM d, yyyy")}
         {duration !== null && ` · ${duration} min`}
       </p>
+
+      {(session as any).is_schedule_override && (
+        <p className="text-xs text-muted-foreground italic mb-6">
+          Scheduled as {(session as any).scheduled_day_type === "rest" ? "Rest Day" : "Cardio Day"} — trained anyway
+        </p>
+      )}
+      {!(session as any).is_schedule_override && <div className="mb-6" />}
 
       <div className="space-y-4">
         {Array.from(exerciseMap.entries()).map(([exId, { name, sets: exSets }]) => (

@@ -287,8 +287,10 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          is_schedule_override: boolean
           phase_day_id: string | null
           phase_id: string | null
+          scheduled_day_type: string
           started_at: string
           status: string
           user_id: string
@@ -298,8 +300,10 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          is_schedule_override?: boolean
           phase_day_id?: string | null
           phase_id?: string | null
+          scheduled_day_type?: string
           started_at?: string
           status?: string
           user_id: string
@@ -309,8 +313,10 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          is_schedule_override?: boolean
           phase_day_id?: string | null
           phase_id?: string | null
+          scheduled_day_type?: string
           started_at?: string
           status?: string
           user_id?: string
