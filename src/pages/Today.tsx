@@ -171,7 +171,7 @@ export default function Today() {
             </h2>
             <p className="text-sm text-muted-foreground">
               {todayDay.day_type === "rest"
-                ? "Your plan says to rest today — you can still train if you want."
+                ? "Rest is part of the plan — you can still train if you want."
                 : "Get moving however feels good today."}
             </p>
           </div>
