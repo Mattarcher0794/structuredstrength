@@ -3,19 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, Sun } from "lucide-react";
+import { Dumbbell, ChevronRight, Sun, CalendarOff, Zap } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
   return day === 0 ? 7 : day; // Convert Sunday=0 to 7
 }
 
+const DAY_LABELS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
 export default function Today() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const today = new Date();
   const dow = getDayOfWeek();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const { data: activePhase } = useQuery({
     queryKey: ["active-phase", user?.id],
@@ -59,6 +69,21 @@ export default function Today() {
     enabled: !!user,
   });
 
+  // Fetch strength days from active phase for override picker
+  const { data: strengthDays = [] } = useQuery({
+    queryKey: ["strength-days", activePhase?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("phase_days")
+        .select("id, day_of_week, workout_name")
+        .eq("phase_id", activePhase!.id)
+        .eq("day_type", "strength")
+        .order("day_of_week");
+      return data ?? [];
+    },
+    enabled: !!activePhase,
+  });
+
   const greetingHour = today.getHours();
   const greeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
 
@@ -75,6 +100,26 @@ export default function Today() {
         phase_id: activePhase.id,
         phase_day_id: todayDay.id,
         date: format(today, "yyyy-MM-dd"),
+        scheduled_day_type: "strength",
+        is_schedule_override: false,
+      })
+      .select()
+      .single();
+    if (data) navigate(`/workout/${data.id}`);
+  };
+
+  const startOverrideWorkout = async (phaseDayId: string) => {
+    if (!activePhase || !todayDay) return;
+    setSheetOpen(false);
+    const { data } = await supabase
+      .from("workout_sessions")
+      .insert({
+        user_id: user!.id,
+        phase_id: activePhase.id,
+        phase_day_id: phaseDayId,
+        date: format(today, "yyyy-MM-dd"),
+        scheduled_day_type: todayDay.day_type,
+        is_schedule_override: true,
       })
       .select()
       .single();
@@ -117,15 +162,64 @@ export default function Today() {
         <div className="rounded-2xl bg-card border border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">No workout scheduled for today in your current phase.</p>
         </div>
-      ) : todayDay.day_type === "rest" ? (
-        <div className="rounded-2xl bg-card border border-border p-8 text-center">
-          <h2 className="text-lg font-display font-semibold mb-2">Rest day</h2>
-          <p className="text-sm text-muted-foreground">Recovery is part of the plan. You've earned this.</p>
-        </div>
-      ) : todayDay.day_type === "cardio" ? (
-        <div className="rounded-2xl bg-card border border-border p-8 text-center">
-          <h2 className="text-lg font-display font-semibold mb-2">Cardio day</h2>
-          <p className="text-sm text-muted-foreground">Get moving however feels good today.</p>
+      ) : todayDay.day_type === "rest" || todayDay.day_type === "cardio" ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-card border border-border p-8 text-center">
+            <CalendarOff className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <h2 className="text-lg font-display font-semibold mb-2">
+              {todayDay.day_type === "rest" ? "Rest day" : "Cardio day"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {todayDay.day_type === "rest"
+                ? "Your plan says to rest today — you can still train if you want."
+                : "Get moving however feels good today."}
+            </p>
+          </div>
+
+          {!activeSession && (
+            <div className="rounded-2xl border border-dashed border-border p-5">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                Train anyway (optional)
+              </p>
+              <Button
+                variant="outline"
+                className="w-full rounded-2xl"
+                onClick={() => setSheetOpen(true)}
+              >
+                <Zap className="mr-2 h-4 w-4" />
+                Choose a workout
+              </Button>
+            </div>
+          )}
+
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetContent side="bottom" className="rounded-t-2xl">
+              <SheetHeader>
+                <SheetTitle>Pick a workout</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-2 pb-6">
+                {strengthDays.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No strength workouts found in this phase yet.
+                  </p>
+                ) : (
+                  strengthDays.map((sd: any) => (
+                    <button
+                      key={sd.id}
+                      onClick={() => startOverrideWorkout(sd.id)}
+                      className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{sd.workout_name || "Strength"}</p>
+                        <p className="text-xs text-muted-foreground">{DAY_LABELS[sd.day_of_week]}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       ) : (
         <div className="space-y-4">
