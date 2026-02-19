@@ -4,14 +4,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import PasscodeSheet from "@/components/PasscodeSheet";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [passcodeOpen, setPasscodeOpen] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -72,6 +77,31 @@ export default function Profile() {
           <LogOut className="h-4 w-4" /> Sign out
         </Button>
       </div>
+
+      {/* Developer */}
+      <div className="mt-8 pt-6 border-t border-border">
+        <button
+          onClick={() => setPasscodeOpen(true)}
+          className="flex w-full items-center justify-between rounded-2xl px-1 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            Developer
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-full text-muted-foreground">
+              beta
+            </Badge>
+          </span>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      <PasscodeSheet
+        open={passcodeOpen}
+        onOpenChange={setPasscodeOpen}
+        onSuccess={() => {
+          sessionStorage.setItem("dev_unlocked", "true");
+          navigate("/profile/developer");
+        }}
+      />
     </div>
   );
 }
