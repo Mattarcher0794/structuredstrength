@@ -19,6 +19,7 @@ interface ExerciseResult {
   target?: string;
   equipment?: string;
   gifUrl?: string;
+  imageUrl?: string;
   instructions?: string[];
   secondaryMuscles?: string[];
 }
@@ -71,7 +72,8 @@ export default function ExerciseApiSearch() {
         setResults([]);
       } else {
         const data = await res.json();
-        const list = Array.isArray(data.results) ? data.results : [];
+        console.log("Exercise API response:", data);
+        const list = Array.isArray(data?.results?.data) ? data.results.data : [];
         setResults(list);
       }
     } catch (e: any) {
@@ -168,15 +170,16 @@ export default function ExerciseApiSearch() {
               onClick={() => openDetail(ex)}
             >
               <div className="flex gap-3 items-center">
-                {ex.gifUrl && (
+                {(ex.gifUrl || ex.imageUrl) && (
                   <img
-                    src={ex.gifUrl}
+                    src={ex.gifUrl || ex.imageUrl}
                     alt={ex.name}
                     className="h-12 w-12 rounded-lg object-cover shrink-0 bg-muted"
                   />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{ex.name}</p>
+                  {ex.exerciseId && <p className="text-[10px] text-muted-foreground truncate">{ex.exerciseId}</p>}
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {ex.bodyPart && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-full text-muted-foreground">
@@ -210,9 +213,9 @@ export default function ExerciseApiSearch() {
       >
         {selectedExercise && (
           <div className="space-y-4 pt-2 pb-4">
-            {selectedExercise.gifUrl && (
+            {(selectedExercise.gifUrl || selectedExercise.imageUrl) && (
               <img
-                src={selectedExercise.gifUrl}
+                src={selectedExercise.gifUrl || selectedExercise.imageUrl}
                 alt={selectedExercise.name}
                 className="w-full max-h-48 object-contain rounded-xl bg-muted"
               />
