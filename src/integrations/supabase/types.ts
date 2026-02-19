@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      nutrition_daily: {
+        Row: {
+          calories: number | null
+          carbs_g: number | null
+          created_at: string | null
+          date: string
+          fat_g: number | null
+          id: string
+          last_synced_at: string | null
+          protein_g: number | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          calories?: number | null
+          carbs_g?: number | null
+          created_at?: string | null
+          date: string
+          fat_g?: number | null
+          id?: string
+          last_synced_at?: string | null
+          protein_g?: number | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          calories?: number | null
+          carbs_g?: number | null
+          created_at?: string | null
+          date?: string
+          fat_g?: number | null
+          id?: string
+          last_synced_at?: string | null
+          protein_g?: number | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       phase_day_exercises: {
         Row: {
           exercise_id: string
