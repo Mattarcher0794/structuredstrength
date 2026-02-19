@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FlaskConical, Database, Search } from "lucide-react";
+import { ArrowLeft, Database, Search, ShieldCheck } from "lucide-react";
+
 const DEV_SESSION_KEY = "dev_unlocked";
 
 export default function Developer() {
@@ -54,7 +55,7 @@ export default function Developer() {
       </Card>
 
       {/* Data Tools */}
-      <Card className="rounded-2xl border-border p-5">
+      <Card className="rounded-2xl border-border p-5 mb-4">
         <div className="flex items-start gap-3">
           <Database className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -66,6 +67,28 @@ export default function Developer() {
               <Button size="sm" variant="outline" className="rounded-xl text-xs" disabled>
                 Reseed exercises
               </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* System Status */}
+      <Card className="rounded-2xl border-border p-5">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="font-medium text-sm">System Status</span>
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">exercise-search-external</p>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-full text-muted-foreground">
+                  v1.0.0
+                </Badge>
+              </div>
+              <div className="text-[11px] text-muted-foreground/70 space-y-0.5">
+                <p>• Added secure RapidAPI proxy via Edge Function</p>
+                <p>• Removed client-side API key handling</p>
+              </div>
             </div>
           </div>
         </div>
