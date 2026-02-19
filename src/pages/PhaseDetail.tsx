@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import ConfirmationSheet from "@/components/ConfirmationSheet";
+import ConfirmBottomSheet from "@/components/ConfirmBottomSheet";
 
 const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const dayTypes = ["rest", "cardio", "strength"] as const;
@@ -183,7 +183,7 @@ export default function PhaseDetail() {
         </Button>
       </div>
 
-      <ConfirmationSheet
+      <ConfirmBottomSheet
         open={showRemoveDialog}
         title="Remove phase?"
         description="This will permanently remove this phase and its workouts. This can't be undone."
