@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, Sun, CalendarOff, Zap, CalendarHeart } from "lucide-react";
+import { Dumbbell, ChevronRight, Sun, Zap, CalendarHeart } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
@@ -212,7 +212,7 @@ export default function Today() {
       todayDay.day_type === "rest" || todayDay.day_type === "cardio" ?
       <div className="space-y-4">
           <div className="rounded-2xl bg-card border border-border p-8 text-center">
-            <CalendarOff className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <CalendarHeart className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
             <h2 className="text-lg font-display font-semibold mb-2">
               {todayDay.day_type === "rest" ? "Rest day" : "Cardio day"}
             </h2>
