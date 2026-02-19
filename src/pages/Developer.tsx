@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FlaskConical, Database } from "lucide-react";
-
+import { ArrowLeft, FlaskConical, Database, Search } from "lucide-react";
 const DEV_SESSION_KEY = "dev_unlocked";
 
 export default function Developer() {
@@ -30,18 +29,26 @@ export default function Developer() {
       <h1 className="text-2xl font-semibold mb-1">Developer</h1>
       <p className="text-sm text-muted-foreground mb-8">Tools here are for testing only.</p>
 
-      {/* External Exercise API */}
+      {/* Exercise API */}
       <Card className="rounded-2xl border-border p-5 mb-4">
         <div className="flex items-start gap-3">
-          <FlaskConical className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+          <Search className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm">External Exercise API</span>
+              <span className="font-medium text-sm">Exercise API</span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-full text-muted-foreground">
                 Experimental
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">Not configured</p>
+            <p className="text-xs text-muted-foreground mb-3">Search external exercise database via RapidAPI</p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl text-xs"
+              onClick={() => navigate("/profile/developer/exercise-api")}
+            >
+              Open API Search
+            </Button>
           </div>
         </div>
       </Card>
