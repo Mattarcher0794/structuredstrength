@@ -82,10 +82,11 @@ export default function Developer() {
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">exercise-search-external</p>
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-full text-muted-foreground">
-                  v1.0.0
+                  v1.0.1
                 </Badge>
               </div>
               <div className="text-[11px] text-muted-foreground/70 space-y-0.5">
+                <p>• Fixed incorrect RapidAPI query parameter (search instead of name)</p>
                 <p>• Added secure RapidAPI proxy via Edge Function</p>
                 <p>• Removed client-side API key handling</p>
               </div>
