@@ -7,12 +7,7 @@ import { Dumbbell, ChevronRight, Sun, CalendarOff, Zap } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
@@ -239,34 +234,29 @@ export default function Today() {
             </div>
           )}
 
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetContent side="bottom" className="rounded-t-2xl">
-              <SheetHeader>
-                <SheetTitle>Pick a workout</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 space-y-2 pb-6">
-                {strengthDays.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No strength workouts found in this phase yet.
-                  </p>
-                ) : (
-                  strengthDays.map((sd: any) => (
-                    <button
-                      key={sd.id}
-                      onClick={() => startOverrideWorkout(sd.id)}
-                      className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{sd.workout_name || "Strength"}</p>
-                        <p className="text-xs text-muted-foreground">{DAY_LABELS[sd.day_of_week]}</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  ))
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+          <BottomSheet open={sheetOpen} onOpenChange={setSheetOpen} title="Pick a workout">
+            <div className="space-y-2 pt-2 pb-2">
+              {strengthDays.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No strength workouts found in this phase yet.
+                </p>
+              ) : (
+                strengthDays.map((sd: any) => (
+                  <button
+                    key={sd.id}
+                    onClick={() => startOverrideWorkout(sd.id)}
+                    className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{sd.workout_name || "Strength"}</p>
+                      <p className="text-xs text-muted-foreground">{DAY_LABELS[sd.day_of_week]}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))
+              )}
+            </div>
+          </BottomSheet>
         </div>
       ) : (
         <div className="space-y-4">
