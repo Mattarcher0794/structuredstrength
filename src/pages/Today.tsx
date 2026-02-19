@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, Sun, Zap, CalendarHeart } from "lucide-react";
+import { Dumbbell, ChevronRight, Sun, Zap, CalendarHeart, Loader2 } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Progress } from "@/components/ui/progress";
+import { NutritionCard } from "@/components/NutritionCard";
 import {
   Sheet,
   SheetContent,
@@ -16,7 +17,7 @@ import {
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
-  return day === 0 ? 7 : day; // Convert Sunday=0 to 7
+  return day === 0 ? 7 : day;
 }
 
 const DAY_LABELS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -24,9 +25,41 @@ const DAY_LABELS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 export default function Today() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const today = new Date();
   const dow = getDayOfWeek();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Pull-to-refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const pulling = useRef(false);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = scrollRef.current;
+    if (el && el.scrollTop <= 0) {
+      touchStartY.current = e.touches[0].clientY;
+      pulling.current = true;
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(async (e: React.TouchEvent) => {
+    if (!pulling.current) return;
+    const diff = e.changedTouches[0].clientY - touchStartY.current;
+    pulling.current = false;
+    if (diff > 80) {
+      setIsRefreshing(true);
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      await queryClient.invalidateQueries({ queryKey: ["active-phase"] });
+      await queryClient.invalidateQueries({ queryKey: ["today-day"] });
+      await queryClient.invalidateQueries({ queryKey: ["active-session"] });
+      await queryClient.invalidateQueries({ queryKey: ["strength-days"] });
+      await queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
+      await queryClient.invalidateQueries({ queryKey: ["nutrition-today"] });
+      setIsRefreshing(false);
+    }
+  }, [queryClient]);
 
   const { data: activePhase } = useQuery({
     queryKey: ["active-phase", user?.id],
@@ -154,7 +187,19 @@ export default function Today() {
   const exerciseCount = todayDay?.phase_day_exercises?.length ?? 0;
 
   return (
-    <div className="mx-auto max-w-lg px-5 pt-12">
+    <div
+      ref={scrollRef}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="mx-auto max-w-lg px-5 pt-12"
+    >
+      {/* Pull-to-refresh spinner */}
+      {isRefreshing && (
+        <div className="flex justify-center pb-4 -mt-2">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
       <div className="mb-8">
         <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
           <Sun className="h-4 w-4" />
@@ -162,6 +207,9 @@ export default function Today() {
         </div>
         <h1 className="text-2xl font-semibold">{greeting}</h1>
       </div>
+
+      {/* Nutrition card — below greeting, above workout */}
+      <NutritionCard />
 
       {activeSession &&
       <button
