@@ -16,6 +16,7 @@ import History from "@/pages/History";
 import WorkoutDetail from "@/pages/WorkoutDetail";
 import Profile from "@/pages/Profile";
 import Developer from "@/pages/Developer";
+import ExerciseApiSearch from "@/pages/ExerciseApiSearch";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ function ProtectedRoutes() {
         <Route path="history/:sessionId" element={<WorkoutDetail />} />
         <Route path="profile" element={<Profile />} />
         <Route path="profile/developer" element={<Developer />} />
+        <Route path="profile/developer/exercise-api" element={<ExerciseApiSearch />} />
       </Route>
       <Route path="workout/:sessionId" element={<ActiveWorkout />} />
       <Route path="*" element={<NotFound />} />
