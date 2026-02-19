@@ -1,16 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmationSheet from "@/components/ConfirmationSheet";
 
 const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const dayTypes = ["rest", "cardio", "strength"] as const;
@@ -168,9 +165,7 @@ export default function PhaseDetail() {
         </Button>
       )}
 
-      {/* Danger zone */}
-      <div className="mt-10 border-t border-destructive/20 pt-6">
-        <h2 className="text-sm font-medium text-destructive mb-3">Danger zone</h2>
+      <div className="mt-10 pt-6">
         <Button
           variant="destructive"
           className="w-full rounded-2xl py-5"
@@ -188,25 +183,17 @@ export default function PhaseDetail() {
         </Button>
       </div>
 
-      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove phase?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove this phase and its workouts. This can't be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={cn(buttonVariants({ variant: "destructive" }))}
-              onClick={() => removeMutation.mutate()}
-            >
-              Remove phase
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmationSheet
+        open={showRemoveDialog}
+        title="Remove phase?"
+        description="This will permanently remove this phase and its workouts. This can't be undone."
+        confirmLabel="Remove phase"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={() => removeMutation.mutate()}
+        onCancel={() => setShowRemoveDialog(false)}
+        isLoading={removeMutation.isPending}
+      />
     </div>
   );
 }
