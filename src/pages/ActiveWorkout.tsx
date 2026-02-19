@@ -109,9 +109,12 @@ export default function ActiveWorkout() {
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
-    <div className="mx-auto max-w-lg px-5 pt-6 pb-32">
-      <div className="flex items-center justify-between mb-6">
-        <button onClick={() => navigate("/")} className="flex items-center gap-1 text-sm text-muted-foreground">
+    <div className="mx-auto max-w-lg pb-32">
+      <div
+        className="sticky top-0 z-40 flex items-center justify-between px-5 py-3 border-b border-border/40 bg-background/80 backdrop-blur-xl backdrop-saturate-150"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      >
+        <button onClick={() => navigate("/")} className="flex items-center gap-1 text-sm text-muted-foreground min-h-[44px]">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
         <Button
@@ -124,6 +127,7 @@ export default function ActiveWorkout() {
           Finish workout
         </Button>
       </div>
+      <div className="px-5 pt-4">
 
       <h1 className="text-xl font-semibold mb-1">{session?.phase_days?.workout_name || "Workout"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Log each set as you go</p>
@@ -155,9 +159,14 @@ export default function ActiveWorkout() {
         })}
       </div>
 
+      </div>{/* close inner px-5 wrapper */}
+
       {/* Rest Timer Overlay */}
       {restRunning && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm p-4">
+        <div
+          className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/80 backdrop-blur-xl backdrop-saturate-150 p-4"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+        >
           <div className="mx-auto max-w-lg flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Rest</p>
