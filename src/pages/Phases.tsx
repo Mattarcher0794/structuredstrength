@@ -7,6 +7,41 @@ import { Plus, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
+function PhaseCard({ phase, navigate, activateMutation, statusColors }: any) {
+  return (
+    <button
+      onClick={() => navigate(`/phases/${phase.id}`)}
+      className="w-full rounded-2xl bg-card border border-border p-4 text-left transition-colors hover:bg-muted/50"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-medium">{phase.name}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {phase.length_weeks} weeks
+            {phase.start_date && ` · Started ${phase.start_date}`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider", statusColors[phase.status])}>
+            {phase.status}
+          </span>
+          {phase.status === "draft" && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-primary"
+              onClick={(e) => { e.stopPropagation(); activateMutation.mutate(phase.id); }}
+            >
+              Activate
+            </Button>
+          )}
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function Phases() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -25,6 +60,9 @@ export default function Phases() {
     },
     enabled: !!user,
   });
+
+  const currentPhases = phases.filter((p: any) => p.status !== "completed");
+  const completedPhases = phases.filter((p: any) => p.status === "completed");
 
   const activateMutation = useMutation({
     mutationFn: async (phaseId: string) => {
@@ -67,41 +105,28 @@ export default function Phases() {
           <Button onClick={() => navigate("/phases/new")} className="rounded-2xl">Create phase</Button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {phases.map((phase: any) => (
-            <button
-              key={phase.id}
-              onClick={() => navigate(`/phases/${phase.id}`)}
-              className="w-full rounded-2xl bg-card border border-border p-4 text-left transition-colors hover:bg-muted/50"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">{phase.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {phase.length_weeks} weeks
-                    {phase.start_date && ` · Started ${phase.start_date}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider", statusColors[phase.status])}>
-                    {phase.status}
-                  </span>
-                  {phase.status === "draft" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs text-primary"
-                      onClick={(e) => { e.stopPropagation(); activateMutation.mutate(phase.id); }}
-                    >
-                      Activate
-                    </Button>
-                  )}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
+        <>
+          {/* Active + Draft phases */}
+          {currentPhases.length > 0 && (
+            <div className="space-y-3">
+              {currentPhases.map((phase: any) => (
+                <PhaseCard key={phase.id} phase={phase} navigate={navigate} activateMutation={activateMutation} statusColors={statusColors} />
+              ))}
+            </div>
+          )}
+
+          {/* Completed phases */}
+          {completedPhases.length > 0 && (
+            <>
+              <h2 className="text-sm font-medium text-muted-foreground mt-8 mb-3">Previous phases</h2>
+              <div className="space-y-3">
+                {completedPhases.map((phase: any) => (
+                  <PhaseCard key={phase.id} phase={phase} navigate={navigate} activateMutation={activateMutation} statusColors={statusColors} />
+                ))}
               </div>
-            </button>
-          ))}
-        </div>
+            </>
+          )}
+        </>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Copy, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -117,6 +117,66 @@ export default function PhaseDetail() {
     },
   });
 
+  const copyMutation = useMutation({
+    mutationFn: async () => {
+      // Create new phase
+      const { data: newPhase, error: phaseErr } = await supabase
+        .from("phases")
+        .insert({ user_id: user!.id, name: `${phase!.name} (v2)`, length_weeks: phase!.length_weeks, status: "draft" })
+        .select("id")
+        .single();
+      if (phaseErr || !newPhase) throw phaseErr || new Error("Failed to create phase");
+
+      // Copy phase_days
+      const { data: origDays } = await supabase.from("phase_days").select("*").eq("phase_id", id!).order("day_of_week");
+      if (origDays && origDays.length > 0) {
+        const newDaysInsert = origDays.map((d: any) => ({
+          phase_id: newPhase.id,
+          day_of_week: d.day_of_week,
+          day_type: d.day_type,
+          workout_name: d.workout_name,
+        }));
+        const { data: newDays, error: daysErr } = await supabase.from("phase_days").insert(newDaysInsert).select("id, day_of_week");
+        if (daysErr) throw daysErr;
+
+        // Map original day_of_week → new day id
+        const dayMap = new Map<number, string>();
+        (newDays ?? []).forEach((nd: any) => dayMap.set(nd.day_of_week, nd.id));
+
+        // Copy exercises for each day
+        const origDayIds = origDays.map((d: any) => d.id);
+        const { data: origExercises } = await supabase.from("phase_day_exercises").select("*").in("phase_day_id", origDayIds);
+        if (origExercises && origExercises.length > 0) {
+          // Need to map original phase_day_id → day_of_week
+          const origDayIdToWeek = new Map<string, number>();
+          origDays.forEach((d: any) => origDayIdToWeek.set(d.id, d.day_of_week));
+
+          const exInsert = origExercises.map((ex: any) => ({
+            phase_day_id: dayMap.get(origDayIdToWeek.get(ex.phase_day_id)!)!,
+            exercise_id: ex.exercise_id,
+            order_index: ex.order_index,
+            num_sets: ex.num_sets,
+            min_reps: ex.min_reps,
+            max_reps: ex.max_reps,
+            notes: ex.notes,
+            rest_seconds: ex.rest_seconds,
+          }));
+          const { error: exErr } = await supabase.from("phase_day_exercises").insert(exInsert);
+          if (exErr) throw exErr;
+        }
+      }
+      return newPhase.id;
+    },
+    onSuccess: (newId) => {
+      queryClient.invalidateQueries({ queryKey: ["phases"] });
+      toast({ title: 'Phase copied to draft (v2)' });
+      navigate(`/phases/${newId}`);
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't copy phase", description: err?.message, variant: "destructive" });
+    },
+  });
+
   if (!phase) return null;
 
   const isActive = phase.status === "active";
@@ -162,6 +222,18 @@ export default function PhaseDetail() {
       {phase.status === "draft" && (
         <Button onClick={() => activateMutation.mutate()} className="w-full rounded-2xl py-5" disabled={activateMutation.isPending}>
           Activate phase
+        </Button>
+      )}
+
+      {phase.status === "completed" && (
+        <Button
+          onClick={() => copyMutation.mutate()}
+          className="w-full rounded-2xl py-5 gap-2"
+          variant="outline"
+          disabled={copyMutation.isPending}
+        >
+          {copyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+          Copy as new draft (v2)
         </Button>
       )}
 
