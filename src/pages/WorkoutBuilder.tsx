@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
@@ -83,6 +83,12 @@ export default function WorkoutBuilder() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["phase-day", dayId] }),
   });
 
+  const [workoutName, setWorkoutName] = useState("");
+
+  useEffect(() => {
+    setWorkoutName(day?.workout_name ?? "");
+  }, [day?.workout_name]);
+
   const muscleGroups = ["all", "Upper", "Lower", "Core"];
 
   return (
@@ -93,9 +99,17 @@ export default function WorkoutBuilder() {
 
       <div className="mb-6">
         <Input
-          value={day?.workout_name || ""}
-          onChange={(e) => updateWorkoutName.mutate(e.target.value)}
+          value={workoutName}
+          onChange={(e) => setWorkoutName(e.target.value)}
+          onBlur={() => {
+            const trimmed = workoutName.trim();
+            if (trimmed !== (day?.workout_name ?? "").trim()) {
+              updateWorkoutName.mutate(trimmed);
+            }
+          }}
           placeholder="Workout name (e.g. Upper Pull)"
+          autoCorrect="off"
+          spellCheck={false}
           className="rounded-2xl text-lg font-medium border-none bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/50"
         />
       </div>
