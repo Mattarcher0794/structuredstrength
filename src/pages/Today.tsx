@@ -224,7 +224,7 @@ export default function Today() {
           </div>
 
           {!activeSession &&
-        <div className="rounded-2xl border border-dashed border-border p-5">
+        <div className="rounded-2xl bg-card border border-border p-5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                 Train anyway (optional)
               </p>
