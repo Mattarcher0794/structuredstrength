@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, ChevronRight, Sun, CalendarOff, Zap } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState } from "react";
+import { Progress } from "@/components/ui/progress";
 import {
   Sheet,
   SheetContent,
@@ -84,6 +85,29 @@ export default function Today() {
     enabled: !!activePhase,
   });
 
+  // Weekly progress: completed sessions this calendar week
+  const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+  const { data: weeklyCompletedCount = 0 } = useQuery({
+    queryKey: ["weekly-completed", user?.id, activePhase?.id, weekStart],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("workout_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("phase_id", activePhase!.id)
+        .eq("status", "completed")
+        .gte("date", weekStart)
+        .lte("date", weekEnd);
+      return count ?? 0;
+    },
+    enabled: !!user && !!activePhase,
+  });
+
+  const plannedStrengthCount = strengthDays.length;
+  const remainingCount = Math.max(plannedStrengthCount - weeklyCompletedCount, 0);
+
   const greetingHour = today.getHours();
   const greeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
 
@@ -147,6 +171,29 @@ export default function Today() {
           <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">Workout in progress</p>
           <p className="text-sm font-medium text-foreground">Tap to continue your session →</p>
         </button>
+      )}
+      {activePhase && (
+        <div className="mb-6 rounded-2xl bg-card border border-border p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">This week</p>
+          <p className="text-sm font-medium">
+            {weeklyCompletedCount <= plannedStrengthCount
+              ? `${weeklyCompletedCount} of ${plannedStrengthCount} sessions complete`
+              : `${weeklyCompletedCount} sessions complete`}
+          </p>
+          {plannedStrengthCount > 0 && (
+            <Progress
+              value={Math.min((weeklyCompletedCount / plannedStrengthCount) * 100, 100)}
+              className="mt-3 h-[7px] rounded-full bg-muted [&>div]:bg-rose-300/70 [&>div]:rounded-full"
+            />
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {weeklyCompletedCount < plannedStrengthCount
+              ? `${remainingCount} sessions left this week`
+              : weeklyCompletedCount === plannedStrengthCount
+                ? "You've completed all planned sessions this week"
+                : "You've gone beyond your plan this week"}
+          </p>
+        </div>
       )}
 
       {!activePhase ? (
