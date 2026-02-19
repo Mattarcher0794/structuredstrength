@@ -256,19 +256,23 @@ function ExerciseCard({
         <div className="flex items-center gap-2 mt-3">
           <span className="text-xs text-muted-foreground w-8">#{nextSet}</span>
           <Input
-            type="number"
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
             placeholder="kg"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
-            className="h-8 w-20 rounded-lg text-center text-xs"
+            className="h-8 w-20 rounded-lg text-center text-[16px] leading-tight"
           />
           <span className="text-muted-foreground text-xs">×</span>
           <Input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="reps"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-8 w-20 rounded-lg text-center text-xs"
+            className="h-8 w-20 rounded-lg text-center text-[16px] leading-tight"
           />
           <Button
             size="sm"
