@@ -141,8 +141,23 @@ export default function Today() {
   const plannedStrengthCount = strengthDays.length;
   const remainingCount = Math.max(plannedStrengthCount - weeklyCompletedCount, 0);
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const greetingHour = today.getHours();
-  const greeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
+  const timeGreeting = greetingHour < 12 ? "Good morning" : greetingHour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = profile?.display_name?.trim().split(/\s+/)[0] || null;
+  const greeting = firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
 
   const startWorkout = async () => {
     if (activeSession) {
