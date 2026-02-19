@@ -25,7 +25,7 @@ serve(async (req) => {
     }
 
     const response = await fetch(
-      `https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1/exercises/search?name=${encodeURIComponent(query)}`,
+      `https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1/exercises/search?search=${encodeURIComponent(query)}`,
       {
         headers: {
           "X-RapidAPI-Key": Deno.env.get("RAPIDAPI_KEY")!,
