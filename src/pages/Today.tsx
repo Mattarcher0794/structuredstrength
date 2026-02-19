@@ -3,11 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, Sun, CalendarOff, Zap } from "lucide-react";
+import { Dumbbell, ChevronRight, Sun, CalendarOff, Zap, CalendarHeart } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
-import { BottomSheet } from "@/components/ui/bottom-sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle } from
+"@/components/ui/sheet";
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
@@ -26,58 +31,58 @@ export default function Today() {
   const { data: activePhase } = useQuery({
     queryKey: ["active-phase", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("phases")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("status", "active")
-        .maybeSingle();
+      const { data } = await supabase.
+      from("phases").
+      select("*").
+      eq("user_id", user!.id).
+      eq("status", "active").
+      maybeSingle();
       return data;
     },
-    enabled: !!user,
+    enabled: !!user
   });
 
   const { data: todayDay } = useQuery({
     queryKey: ["today-day", activePhase?.id, dow],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("phase_days")
-        .select("*, phase_day_exercises(*, exercises(*))")
-        .eq("phase_id", activePhase!.id)
-        .eq("day_of_week", dow)
-        .maybeSingle();
+      const { data } = await supabase.
+      from("phase_days").
+      select("*, phase_day_exercises(*, exercises(*))").
+      eq("phase_id", activePhase!.id).
+      eq("day_of_week", dow).
+      maybeSingle();
       return data;
     },
-    enabled: !!activePhase,
+    enabled: !!activePhase
   });
 
   const { data: activeSession } = useQuery({
     queryKey: ["active-session", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("workout_sessions")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("status", "in_progress")
-        .maybeSingle();
+      const { data } = await supabase.
+      from("workout_sessions").
+      select("*").
+      eq("user_id", user!.id).
+      eq("status", "in_progress").
+      maybeSingle();
       return data;
     },
-    enabled: !!user,
+    enabled: !!user
   });
 
   // Fetch strength days from active phase for override picker
   const { data: strengthDays = [] } = useQuery({
     queryKey: ["strength-days", activePhase?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("phase_days")
-        .select("id, day_of_week, workout_name")
-        .eq("phase_id", activePhase!.id)
-        .eq("day_type", "strength")
-        .order("day_of_week");
+      const { data } = await supabase.
+      from("phase_days").
+      select("id, day_of_week, workout_name").
+      eq("phase_id", activePhase!.id).
+      eq("day_type", "strength").
+      order("day_of_week");
       return data ?? [];
     },
-    enabled: !!activePhase,
+    enabled: !!activePhase
   });
 
   // Weekly progress: completed sessions this calendar week
@@ -87,17 +92,17 @@ export default function Today() {
   const { data: weeklyCompletedCount = 0 } = useQuery({
     queryKey: ["weekly-completed", user?.id, activePhase?.id, weekStart],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("workout_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id)
-        .eq("phase_id", activePhase!.id)
-        .eq("status", "completed")
-        .gte("date", weekStart)
-        .lte("date", weekEnd);
+      const { count } = await supabase.
+      from("workout_sessions").
+      select("id", { count: "exact", head: true }).
+      eq("user_id", user!.id).
+      eq("phase_id", activePhase!.id).
+      eq("status", "completed").
+      gte("date", weekStart).
+      lte("date", weekEnd);
       return count ?? 0;
     },
-    enabled: !!user && !!activePhase,
+    enabled: !!user && !!activePhase
   });
 
   const plannedStrengthCount = strengthDays.length;
@@ -112,36 +117,36 @@ export default function Today() {
       return;
     }
     if (!activePhase || !todayDay) return;
-    const { data } = await supabase
-      .from("workout_sessions")
-      .insert({
-        user_id: user!.id,
-        phase_id: activePhase.id,
-        phase_day_id: todayDay.id,
-        date: format(today, "yyyy-MM-dd"),
-        scheduled_day_type: "strength",
-        is_schedule_override: false,
-      })
-      .select()
-      .single();
+    const { data } = await supabase.
+    from("workout_sessions").
+    insert({
+      user_id: user!.id,
+      phase_id: activePhase.id,
+      phase_day_id: todayDay.id,
+      date: format(today, "yyyy-MM-dd"),
+      scheduled_day_type: "strength",
+      is_schedule_override: false
+    }).
+    select().
+    single();
     if (data) navigate(`/workout/${data.id}`);
   };
 
   const startOverrideWorkout = async (phaseDayId: string) => {
     if (!activePhase || !todayDay) return;
     setSheetOpen(false);
-    const { data } = await supabase
-      .from("workout_sessions")
-      .insert({
-        user_id: user!.id,
-        phase_id: activePhase.id,
-        phase_day_id: phaseDayId,
-        date: format(today, "yyyy-MM-dd"),
-        scheduled_day_type: todayDay.day_type,
-        is_schedule_override: true,
-      })
-      .select()
-      .single();
+    const { data } = await supabase.
+    from("workout_sessions").
+    insert({
+      user_id: user!.id,
+      phase_id: activePhase.id,
+      phase_day_id: phaseDayId,
+      date: format(today, "yyyy-MM-dd"),
+      scheduled_day_type: todayDay.day_type,
+      is_schedule_override: true
+    }).
+    select().
+    single();
     if (data) navigate(`/workout/${data.id}`);
   };
 
@@ -158,108 +163,113 @@ export default function Today() {
         <h1 className="text-2xl font-semibold">{greeting}</h1>
       </div>
 
-      {activeSession && (
-        <button
-          onClick={() => navigate(`/workout/${activeSession.id}`)}
-          className="mb-6 w-full rounded-2xl border border-primary/30 bg-accent p-4 text-left"
-        >
+      {activeSession &&
+      <button
+        onClick={() => navigate(`/workout/${activeSession.id}`)}
+        className="mb-6 w-full rounded-2xl border border-primary/30 bg-accent p-4 text-left">
+
           <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">Workout in progress</p>
           <p className="text-sm font-medium text-foreground">Tap to continue your session →</p>
         </button>
-      )}
-      {activePhase && (
-        <div className="mb-6 rounded-2xl bg-card border border-border p-5">
+      }
+      {activePhase &&
+      <div className="mb-6 rounded-2xl bg-card border border-border p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">This week</p>
           <p className="text-sm font-medium">
-            {weeklyCompletedCount <= plannedStrengthCount
-              ? `${weeklyCompletedCount} of ${plannedStrengthCount} sessions complete`
-              : `${weeklyCompletedCount} sessions complete`}
+            {weeklyCompletedCount <= plannedStrengthCount ?
+          `${weeklyCompletedCount} of ${plannedStrengthCount} sessions complete` :
+          `${weeklyCompletedCount} sessions complete`}
           </p>
-          {plannedStrengthCount > 0 && (
-            <Progress
-              value={Math.min((weeklyCompletedCount / plannedStrengthCount) * 100, 100)}
-              className="mt-3 h-[7px] rounded-full bg-muted [&>div]:bg-rose-300/70 [&>div]:rounded-full"
-            />
-          )}
+          {plannedStrengthCount > 0 &&
+        <Progress
+          value={Math.min(weeklyCompletedCount / plannedStrengthCount * 100, 100)}
+          className="mt-3 h-[7px] rounded-full bg-muted [&>div]:bg-rose-300/70 [&>div]:rounded-full" />
+
+        }
           <p className="mt-2 text-xs text-muted-foreground">
-            {weeklyCompletedCount < plannedStrengthCount
-              ? `${remainingCount} sessions left this week`
-              : weeklyCompletedCount === plannedStrengthCount
-                ? "You've completed all planned sessions this week"
-                : "You've gone beyond your plan this week"}
+            {weeklyCompletedCount < plannedStrengthCount ?
+          `${remainingCount} sessions left this week` :
+          weeklyCompletedCount === plannedStrengthCount ?
+          "You've completed all planned sessions this week" :
+          "You've gone beyond your plan this week"}
           </p>
         </div>
-      )}
+      }
 
-      {!activePhase ? (
-        <div className="rounded-2xl bg-card border border-border p-8 text-center">
+      {!activePhase ?
+      <div className="rounded-2xl bg-card border border-border p-8 text-center">
           <Dumbbell className="mx-auto mb-4 h-10 w-10 text-muted-foreground/40" />
           <h2 className="text-lg font-display font-semibold mb-2">No active phase</h2>
           <p className="text-sm text-muted-foreground mb-6">Create a training phase to get your weekly plan rolling.</p>
           <Button onClick={() => navigate("/phases/new")} className="rounded-2xl">
             Create your first phase
           </Button>
-        </div>
-      ) : !todayDay ? (
-        <div className="rounded-2xl bg-card border border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">No workout scheduled for today in your current phase.</p>
-        </div>
-      ) : todayDay.day_type === "rest" || todayDay.day_type === "cardio" ? (
-        <div className="space-y-4">
+        </div> :
+      !todayDay ?
+      <div className="rounded-2xl bg-card border border-border p-8 text-center">
+          <CalendarHeart className="text-sm text-muted-foreground">No workout scheduled for today in your current phase.</CalendarHeart>
+        </div> :
+      todayDay.day_type === "rest" || todayDay.day_type === "cardio" ?
+      <div className="space-y-4">
           <div className="rounded-2xl bg-card border border-border p-8 text-center">
             <CalendarOff className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
             <h2 className="text-lg font-display font-semibold mb-2">
               {todayDay.day_type === "rest" ? "Rest day" : "Cardio day"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {todayDay.day_type === "rest"
-                ? "Rest is part of the plan — you can still train if you want."
-                : "Get moving however feels good today."}
+              {todayDay.day_type === "rest" ?
+            "Rest is part of the plan — you can still train if you want." :
+            "Get moving however feels good today."}
             </p>
           </div>
 
-          {!activeSession && (
-            <div className="rounded-2xl border border-dashed border-border p-5">
+          {!activeSession &&
+        <div className="rounded-2xl border border-dashed border-border p-5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                 Train anyway (optional)
               </p>
               <Button
-                variant="outline"
-                className="w-full rounded-2xl"
-                onClick={() => setSheetOpen(true)}
-              >
+            variant="outline"
+            className="w-full rounded-2xl"
+            onClick={() => setSheetOpen(true)}>
+
                 <Zap className="mr-2 h-4 w-4" />
                 Choose a workout
               </Button>
             </div>
-          )}
+        }
 
-          <BottomSheet open={sheetOpen} onOpenChange={setSheetOpen} title="Pick a workout">
-            <div className="space-y-2 pt-2 pb-2">
-              {strengthDays.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No strength workouts found in this phase yet.
-                </p>
-              ) : (
-                strengthDays.map((sd: any) => (
-                  <button
-                    key={sd.id}
-                    onClick={() => startOverrideWorkout(sd.id)}
-                    className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{sd.workout_name || "Strength"}</p>
-                      <p className="text-xs text-muted-foreground">{DAY_LABELS[sd.day_of_week]}</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ))
-              )}
-            </div>
-          </BottomSheet>
-        </div>
-      ) : (
-        <div className="space-y-4">
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetContent side="bottom" className="rounded-t-2xl">
+              <SheetHeader>
+                <SheetTitle>Pick a workout</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-2 pb-6">
+                {strengthDays.length === 0 ?
+              <p className="text-sm text-muted-foreground text-center py-4">
+                    No strength workouts found in this phase yet.
+                  </p> :
+
+              strengthDays.map((sd: any) =>
+              <button
+                key={sd.id}
+                onClick={() => startOverrideWorkout(sd.id)}
+                className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors">
+
+                      <div>
+                        <p className="text-sm font-medium">{sd.workout_name || "Strength"}</p>
+                        <p className="text-xs text-muted-foreground">{DAY_LABELS[sd.day_of_week]}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+              )
+              }
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div> :
+
+      <div className="space-y-4">
           <div className="rounded-2xl bg-card border border-border p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -272,27 +282,27 @@ export default function Today() {
             </div>
 
             <div className="space-y-2">
-              {todayDay.phase_day_exercises
-                ?.sort((a: any, b: any) => a.order_index - b.order_index)
-                .map((pde: any) => (
-                  <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
+              {todayDay.phase_day_exercises?.
+            sort((a: any, b: any) => a.order_index - b.order_index).
+            map((pde: any) =>
+            <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
                     <span className="font-medium">{pde.exercises?.name}</span>
                     <span className="text-muted-foreground text-xs">
                       {pde.num_sets} × {pde.min_reps}{pde.max_reps !== pde.min_reps ? `–${pde.max_reps}` : ""}
                     </span>
                   </div>
-                ))}
+            )}
             </div>
           </div>
 
-          {isStrengthDay && !activeSession && (
-            <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
+          {isStrengthDay && !activeSession &&
+        <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
               Start workout
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
-          )}
+        }
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
