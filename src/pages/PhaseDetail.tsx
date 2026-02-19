@@ -1,11 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const dayTypes = ["rest", "cardio", "strength"] as const;
@@ -21,6 +26,7 @@ export default function PhaseDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
   const { data: phase } = useQuery({
     queryKey: ["phase", id],
@@ -66,7 +72,57 @@ export default function PhaseDetail() {
     },
   });
 
+  const removeMutation = useMutation({
+    mutationFn: async () => {
+      // Get phase_days
+      const { data: phaseDays } = await supabase.from("phase_days").select("id").eq("phase_id", id!);
+      const dayIds = (phaseDays ?? []).map((d: any) => d.id);
+
+      // Get workout_sessions
+      const { data: sessions } = await supabase.from("workout_sessions").select("id").eq("phase_id", id!);
+      const sessionIds = (sessions ?? []).map((s: any) => s.id);
+
+      // Delete session_exercise_swaps & session_sets for those sessions
+      if (sessionIds.length > 0) {
+        await supabase.from("session_exercise_swaps").delete().in("workout_session_id", sessionIds);
+        await supabase.from("session_sets").delete().in("workout_session_id", sessionIds);
+      }
+
+      // Delete workout_sessions
+      if (sessionIds.length > 0) {
+        await supabase.from("workout_sessions").delete().in("id", sessionIds);
+      }
+
+      // Delete phase_day_exercises
+      if (dayIds.length > 0) {
+        await supabase.from("phase_day_exercises").delete().in("phase_day_id", dayIds);
+      }
+
+      // Delete phase_days
+      if (dayIds.length > 0) {
+        await supabase.from("phase_days").delete().in("id", dayIds);
+      }
+
+      // Delete the phase
+      const { error } = await supabase.from("phases").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["phases"] });
+      queryClient.invalidateQueries({ queryKey: ["active-phase"] });
+      queryClient.invalidateQueries({ queryKey: ["phase", id] });
+      queryClient.invalidateQueries({ queryKey: ["phase-days", id] });
+      toast({ title: "Phase removed" });
+      navigate("/phases");
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't remove phase", description: err?.message || "Something went wrong", variant: "destructive" });
+    },
+  });
+
   if (!phase) return null;
+
+  const isActive = phase.status === "active";
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6">
@@ -111,6 +167,46 @@ export default function PhaseDetail() {
           Activate phase
         </Button>
       )}
+
+      {/* Danger zone */}
+      <div className="mt-10 border-t border-destructive/20 pt-6">
+        <h2 className="text-sm font-medium text-destructive mb-3">Danger zone</h2>
+        <Button
+          variant="destructive"
+          className="w-full rounded-2xl py-5"
+          disabled={isActive || removeMutation.isPending}
+          onClick={() => {
+            if (isActive) {
+              toast({ title: "Active phases can't be removed. Activate another phase first." });
+              return;
+            }
+            setShowRemoveDialog(true);
+          }}
+        >
+          {removeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Remove phase
+        </Button>
+      </div>
+
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove phase?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this phase and its workouts. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={cn(buttonVariants({ variant: "destructive" }))}
+              onClick={() => removeMutation.mutate()}
+            >
+              Remove phase
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
