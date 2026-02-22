@@ -203,6 +203,10 @@ export default function PhaseDetail() {
         await supabase.from("phase_day_exercises").delete().in("phase_day_id", existingDayIds);
         await supabase.from("phase_days").delete().in("id", existingDayIds);
       }
+      // Set start_date if not already set
+      if (!phase?.start_date) {
+        await supabase.from("phases").update({ start_date: new Date().toISOString().split("T")[0] }).eq("id", id);
+      }
 
       // Insert new days
       const dayRows = aiPlan.days.map((d) => ({
