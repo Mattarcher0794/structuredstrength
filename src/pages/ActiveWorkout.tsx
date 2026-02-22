@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Check, Pause, Play, RotateCcw, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ExerciseSwapSheet from "@/components/ExerciseSwapSheet";
 
@@ -14,6 +14,9 @@ export default function ActiveWorkout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Active exercise index
+  const [activeIndex, setActiveIndex] = useState(0);
 
   // Rest timer
   const [restTime, setRestTime] = useState(0);
@@ -81,7 +84,6 @@ export default function ActiveWorkout() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
-      // Determine rest duration: exercise-specific > profile default > 90
       const duration = variables.exerciseRestSeconds ?? defaultRest;
       restStartRef.current = Date.now();
       restTargetRef.current = duration;
@@ -120,7 +122,6 @@ export default function ActiveWorkout() {
   const exercises = session?.phase_days?.phase_day_exercises
     ?.sort((a: any, b: any) => a.order_index - b.order_index) ?? [];
 
-  // Resolve swapped exercises
   const getEffectiveExercise = useCallback((pde: any) => {
     const swap = swaps.find((s: any) => s.original_exercise_id === pde.exercise_id);
     if (swap) return { id: swap.replacement_exercise_id, name: (swap as any).replacement?.name || "Swapped" };
@@ -131,6 +132,7 @@ export default function ActiveWorkout() {
 
   return (
     <div className="mx-auto max-w-lg pb-32">
+      {/* Header */}
       <div
         className="sticky top-0 z-40 flex items-center justify-between px-5 py-3 border-b border-border/40 bg-background/80 backdrop-blur-xl backdrop-saturate-150"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
@@ -148,41 +150,50 @@ export default function ActiveWorkout() {
           Finish workout
         </Button>
       </div>
+
       <div className="px-5 pt-4">
+        <h1 className="text-xl font-semibold mb-1">{session?.phase_days?.workout_name || "Workout"}</h1>
+        <p className="text-xs text-muted-foreground mb-5">Log each set as you go</p>
 
-      <h1 className="text-xl font-semibold mb-1">{session?.phase_days?.workout_name || "Workout"}</h1>
-      <p className="text-xs text-muted-foreground mb-6">Log each set as you go</p>
+        <div className="space-y-2">
+          {exercises.map((pde: any, index: number) => {
+            const eff = getEffectiveExercise(pde);
+            const completedSets = sessionSets.filter((s: any) => s.exercise_id === eff.id);
+            const isActive = activeIndex === index;
 
-      <div className="space-y-4">
-        {exercises.map((pde: any) => {
-          const eff = getEffectiveExercise(pde);
-          const completedSets = sessionSets.filter((s: any) => s.exercise_id === eff.id);
-          return (
-            <ExerciseCard
-              key={pde.id}
-              exerciseId={eff.id}
-              exerciseName={eff.name}
-              numSets={pde.num_sets}
-              minReps={pde.min_reps}
-              maxReps={pde.max_reps}
-              completedSets={completedSets}
-              onLogSet={(setNumber, reps, weight) =>
-                logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
-              }
-              onSwap={() => {
-                setSwapExerciseId(pde.exercise_id);
-                setSwapMuscleGroup(pde.exercises?.muscle_group || "");
-                setSwapMovementPattern(pde.exercises?.movement_pattern || "");
-              }}
-              isSwapped={swaps.some((s: any) => s.original_exercise_id === pde.exercise_id)}
-            />
-          );
-        })}
+            return isActive ? (
+              <ActiveExerciseCard
+                key={pde.id}
+                exerciseId={eff.id}
+                exerciseName={eff.name}
+                numSets={pde.num_sets}
+                minReps={pde.min_reps}
+                maxReps={pde.max_reps}
+                completedSets={completedSets}
+                onLogSet={(setNumber, reps, weight) =>
+                  logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
+                }
+                onSwap={() => {
+                  setSwapExerciseId(pde.exercise_id);
+                  setSwapMuscleGroup(pde.exercises?.muscle_group || "");
+                  setSwapMovementPattern(pde.exercises?.movement_pattern || "");
+                }}
+                isSwapped={swaps.some((s: any) => s.original_exercise_id === pde.exercise_id)}
+              />
+            ) : (
+              <InactiveExerciseCard
+                key={pde.id}
+                exerciseName={eff.name}
+                numSets={pde.num_sets}
+                completedCount={completedSets.length}
+                onClick={() => setActiveIndex(index)}
+              />
+            );
+          })}
+        </div>
       </div>
 
-      </div>{/* close inner px-5 wrapper */}
-
-      {/* Rest Timer Overlay */}
+      {/* Rest Timer */}
       {restRunning && (
         <div
           className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/80 backdrop-blur-xl backdrop-saturate-150 p-4"
@@ -191,7 +202,9 @@ export default function ActiveWorkout() {
           <div className="mx-auto max-w-lg flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Rest</p>
-              <p className="text-2xl font-display font-semibold tabular-nums">{formatTime(restTime)}</p>
+              <p className="font-display font-bold tabular-nums" style={{ fontSize: "48px", lineHeight: 1.1 }}>
+                {formatTime(restTime)}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setRestRunning(false)}>
@@ -227,7 +240,8 @@ export default function ActiveWorkout() {
   );
 }
 
-function ExerciseCard({
+/* ── Active Exercise Card ── */
+function ActiveExerciseCard({
   exerciseId, exerciseName, numSets, minReps, maxReps,
   completedSets, onLogSet, onSwap, isSwapped,
 }: {
@@ -241,7 +255,7 @@ function ExerciseCard({
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
 
-  // Pre-fill from last completed set
+  // Pre-fill weight from last completed set in this session
   useEffect(() => {
     if (completedSets.length > 0) {
       const last = completedSets[completedSets.length - 1];
@@ -250,64 +264,104 @@ function ExerciseCard({
   }, [completedSets.length]);
 
   return (
-    <div className={cn("rounded-2xl bg-card border border-border p-4", allDone && "opacity-60")}>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="text-sm font-medium">{exerciseName}</h3>
-          <p className="text-xs text-muted-foreground">
-            {numSets} sets × {minReps}{maxReps !== minReps ? `–${maxReps}` : ""} reps
-            {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
-          </p>
-        </div>
-        <button onClick={onSwap} className="text-muted-foreground hover:text-primary transition-colors">
+    <div
+      className={cn(
+        "rounded-2xl bg-card border border-border/60 p-5 shadow-md transition-all duration-250 ease-in-out",
+        allDone && "opacity-60"
+      )}
+    >
+      {/* Header row */}
+      <div className="flex items-start justify-between mb-1">
+        <h3 className="text-lg font-semibold leading-tight">{exerciseName}</h3>
+        <button onClick={onSwap} className="text-muted-foreground hover:text-primary transition-colors mt-0.5">
           <ArrowRightLeft className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Completed sets */}
-      {completedSets.map((s: any) => (
-        <div key={s.id} className="flex items-center gap-2 mb-1.5 text-xs text-muted-foreground">
-          <Check className="h-3.5 w-3.5 text-primary" />
-          <span>Set {s.set_number}: {s.weight}kg × {s.reps}</span>
+      {/* Prescription */}
+      <p className="text-xs text-muted-foreground mb-3">
+        {numSets} sets × {minReps}{maxReps !== minReps ? `–${maxReps}` : ""} reps
+        {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
+      </p>
+
+      {/* Completed sets as pills */}
+      {completedSets.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {completedSets.map((s: any) => (
+            <span
+              key={s.id}
+              className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground"
+            >
+              {s.weight}kg × {s.reps}
+            </span>
+          ))}
         </div>
-      ))}
+      )}
 
       {/* Next set input */}
       {!allDone && (
-        <div className="flex items-center gap-2 mt-3">
-          <span className="text-xs text-muted-foreground w-8">#{nextSet}</span>
-          <Input
-            type="text"
-            inputMode="decimal"
-            pattern="[0-9]*\.?[0-9]*"
-            placeholder="kg"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            className="h-8 w-20 rounded-lg text-center text-[16px] leading-tight"
-          />
-          <span className="text-muted-foreground text-xs">×</span>
-          <Input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            placeholder="reps"
-            value={reps}
-            onChange={(e) => setReps(e.target.value)}
-            className="h-8 w-20 rounded-lg text-center text-[16px] leading-tight"
-          />
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground font-medium w-8 shrink-0">#{nextSet}</span>
+            <Input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+              placeholder="kg"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
+              style={{ fontSize: "20px" }}
+            />
+            <span className="text-muted-foreground text-sm font-medium">×</span>
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="reps"
+              value={reps}
+              onChange={(e) => setReps(e.target.value)}
+              className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
+              style={{ fontSize: "20px" }}
+            />
+          </div>
           <Button
-            size="sm"
-            className="h-8 rounded-lg text-xs"
+            className="w-full mt-3 h-14 rounded-xl text-base font-semibold"
             disabled={!reps}
             onClick={() => {
               onLogSet(nextSet, reps, weight);
               setReps("");
             }}
           >
-            Log
+            Log set
           </Button>
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Inactive Exercise Card ── */
+function InactiveExerciseCard({
+  exerciseName, numSets, completedCount, onClick,
+}: {
+  exerciseName: string; numSets: number; completedCount: number;
+  onClick: () => void;
+}) {
+  const allDone = completedCount >= numSets;
+
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center justify-between rounded-xl bg-secondary/60 px-4 py-3 text-left transition-all duration-200 hover:bg-secondary/80 active:scale-[0.98]",
+        allDone && "opacity-50"
+      )}
+    >
+      <span className="text-sm font-medium text-foreground truncate">{exerciseName}</span>
+      <span className="text-xs text-muted-foreground shrink-0 ml-3">
+        {completedCount > 0 ? `${completedCount} / ${numSets} sets` : `${numSets} sets`}
+      </span>
+    </button>
   );
 }
