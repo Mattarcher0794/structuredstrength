@@ -341,6 +341,11 @@ export default function PhaseDetail() {
             >
               {day.day_type}
             </button>
+            {day.day_type === "strength" && day.workout_name && (
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground max-w-[120px] truncate">
+                {day.workout_name}
+              </span>
+            )}
             <div className="flex-1" />
             {day.day_type === "strength" && (
               <button
