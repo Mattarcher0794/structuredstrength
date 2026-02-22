@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2 } from "lucide-react";
+import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -405,9 +405,7 @@ export default function Today() {
               </div>
               <div className="flex items-center justify-between min-h-[44px] py-2">
                 <h2 className="text-lg font-display text-muted-foreground">{todayDay.workout_name || "Strength"}</h2>
-                <span className="rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: "hsl(152 81% 91%)", color: "hsl(166 72% 20%)" }}>
-                  Done
-                </span>
+                <Check className="h-5 w-5" style={{ color: "hsl(var(--primary) / 0.7)" }} />
               </div>
               <p className="text-xs text-muted-foreground">Completed today</p>
             </div>
