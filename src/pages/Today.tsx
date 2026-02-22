@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check } from "lucide-react";
+import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -263,6 +263,62 @@ export default function Today() {
     );
   };
 
+  function NoPhaseEmptyState({ userId }: { userId?: string }) {
+    const nav = useNavigate();
+    const { data: phaseCount, isLoading } = useQuery({
+      queryKey: ["all-phases-count", userId],
+      queryFn: async () => {
+        const { count } = await supabase
+          .from("phases")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId!);
+        return count ?? 0;
+      },
+      enabled: !!userId,
+    });
+
+    if (isLoading) return null;
+
+    const isNew = (phaseCount ?? 0) === 0;
+
+    return (
+      <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-4">
+        {isNew ? (
+          <Sparkles className="mx-auto h-8 w-8 text-primary/50" />
+        ) : (
+          <Dumbbell className="mx-auto h-8 w-8 text-primary/50" />
+        )}
+
+        <div>
+          <h2 className="text-lg font-display font-semibold mb-1">
+            {isNew ? "Let's build your first plan" : "Ready for your next block?"}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isNew
+              ? "Tell us how you train and we'll create a personalised programme to get you started."
+              : "You've finished your last phase. Start a new one to keep your progress going."}
+          </p>
+        </div>
+
+        <div className="space-y-2.5 pt-2">
+          <Button
+            onClick={() => nav("/phases/new?agent=true")}
+            className="w-full rounded-2xl py-5"
+          >
+            {isNew ? "Create a plan for me" : "Suggest my next plan"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => nav("/phases/new")}
+            className="w-full rounded-2xl py-5"
+          >
+            {isNew ? "I'll build it myself" : "Build it myself"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={scrollRef}
@@ -322,14 +378,7 @@ export default function Today() {
       }
 
       {!activePhase ?
-      <div className="rounded-2xl bg-card border border-border p-8 text-center">
-          <Dumbbell className="mx-auto mb-4 h-10 w-10 text-muted-foreground/40" />
-          <h2 className="text-lg font-display font-semibold mb-2">No active phase</h2>
-          <p className="text-sm text-muted-foreground mb-6">Create a training phase to get your weekly plan rolling.</p>
-          <Button onClick={() => navigate("/phases/new")} className="rounded-2xl">
-            Create your first phase
-          </Button>
-        </div> :
+      <NoPhaseEmptyState userId={user?.id} /> :
       !todayDay ?
       <div className="rounded-2xl bg-card border border-border p-8 text-center">
           <CalendarHeart className="text-sm text-muted-foreground">No workout scheduled for today in your current phase.</CalendarHeart>

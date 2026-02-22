@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,12 +15,14 @@ import AIPlanSuggestionCard, { type AIPlan } from "@/components/AIPlanSuggestion
 export default function PhaseCreate() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [weeks, setWeeks] = useState("6");
 
   const [aiState, setAiState] = useState<"idle" | "loading" | "suggestion" | "error">("idle");
   const [aiPlan, setAiPlan] = useState<AIPlan | null>(null);
   const [applyingPlan, setApplyingPlan] = useState(false);
+  const autoTriggered = useRef(false);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -64,6 +66,14 @@ export default function PhaseCreate() {
       setAiState("error");
     }
   };
+
+  // Auto-trigger AI suggestion when ?agent=true
+  useEffect(() => {
+    if (searchParams.get("agent") === "true" && user && !autoTriggered.current && aiState === "idle") {
+      autoTriggered.current = true;
+      handleSuggest();
+    }
+  }, [user, searchParams]);
 
   const handleUsePlan = async () => {
     if (!aiPlan || !user) return;
