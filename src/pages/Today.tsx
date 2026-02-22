@@ -202,6 +202,44 @@ export default function Today() {
   const isStrengthDay = todayDay?.day_type === "strength";
   const exerciseCount = todayDay?.phase_day_exercises?.length ?? 0;
 
+  // Phase week progress
+  const currentWeek = activePhase?.start_date
+    ? Math.min(
+        Math.floor((today.getTime() - new Date(activePhase.start_date + "T00:00:00").getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1,
+        activePhase.length_weeks
+      )
+    : null;
+
+  const WeekProgressBar = () => {
+    if (!activePhase?.start_date || currentWeek === null) return null;
+    return (
+      <div className="mt-1.5 mb-1">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">
+          Week {currentWeek} of {activePhase.length_weeks}
+        </p>
+        <div className="flex gap-[3px]">
+          {Array.from({ length: activePhase.length_weeks }, (_, i) => {
+            const week = i + 1;
+            return (
+              <div
+                key={week}
+                className="h-1 flex-1 rounded-full"
+                style={{
+                  backgroundColor:
+                    week < currentWeek
+                      ? "hsl(var(--primary))"
+                      : week === currentWeek
+                      ? "hsl(var(--primary) / 0.5)"
+                      : "hsl(var(--muted))",
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       ref={scrollRef}
@@ -276,7 +314,9 @@ export default function Today() {
       todayDay.day_type === "rest" || todayDay.day_type === "cardio" ?
       <div className="space-y-4">
           <div className="rounded-2xl bg-card border border-border p-8 text-center">
-            <CalendarHeart className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+            <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+            <WeekProgressBar />
+            <CalendarHeart className="mx-auto mb-3 mt-4 h-8 w-8 text-muted-foreground/40" />
             <h2 className="text-lg font-display font-semibold mb-2">
               {todayDay.day_type === "rest" ? "Rest day" : "Cardio day"}
             </h2>
@@ -338,6 +378,7 @@ export default function Today() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+                <WeekProgressBar />
                 <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
               </div>
               <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
