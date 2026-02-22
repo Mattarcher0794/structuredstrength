@@ -296,7 +296,7 @@ export default function Today() {
         // Create phase
         const { data: phase } = await supabase
           .from("phases")
-          .insert({ user_id: userId, name: plan.planName, length_weeks: 6 })
+          .insert({ user_id: userId, name: plan.planName, length_weeks: 6, start_date: new Date().toISOString().split("T")[0] })
           .select()
           .single();
         if (!phase) throw new Error("Failed to create phase");
