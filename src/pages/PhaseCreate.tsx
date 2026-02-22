@@ -82,7 +82,7 @@ export default function PhaseCreate() {
     try {
       const { data: phase } = await supabase
         .from("phases")
-        .insert({ user_id: user.id, name, length_weeks: parseInt(weeks) })
+        .insert({ user_id: user.id, name, length_weeks: parseInt(weeks), start_date: new Date().toISOString().split("T")[0] })
         .select()
         .single();
       if (!phase) throw new Error("Failed to create phase");
