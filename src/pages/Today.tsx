@@ -383,19 +383,35 @@ export default function Today() {
               <WeekProgressBar />
             </div>
 
-            <Collapsible open={exercisesOpen} onOpenChange={setExercisesOpen}>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center justify-between w-full min-h-[44px] py-2 text-left">
-                  <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
-                      {exerciseCount} exercises
-                    </span>
-                    <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", exercisesOpen && "rotate-180")} />
-                  </div>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="animate-accordion-down data-[state=closed]:animate-accordion-up">
+            <div>
+              <button
+                onClick={() => setExercisesOpen(o => !o)}
+                className="flex items-center justify-between w-full min-h-[44px] py-2 text-left"
+              >
+                <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
+                    {exerciseCount} exercises
+                  </span>
+                  <ChevronDown
+                    className="h-4 w-4 text-muted-foreground"
+                    style={{
+                      transform: exercisesOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 250ms ease-in-out",
+                    }}
+                  />
+                </div>
+              </button>
+              <div
+                style={{
+                  maxHeight: exercisesOpen ? "500px" : "0px",
+                  opacity: exercisesOpen ? 1 : 0,
+                  overflow: "hidden",
+                  transition: exercisesOpen
+                    ? "max-height 250ms ease-in-out, opacity 200ms ease-in-out 50ms"
+                    : "max-height 250ms ease-in-out, opacity 200ms ease-in-out",
+                }}
+              >
                 <div className="space-y-2 pt-1">
                   {todayDay.phase_day_exercises?.
                 sort((a: any, b: any) => a.order_index - b.order_index).
@@ -408,8 +424,8 @@ export default function Today() {
                       </div>
                 )}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
+            </div>
           </div>
 
           {isStrengthDay && !activeSession &&
