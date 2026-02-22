@@ -52,8 +52,10 @@ export default function Developer() {
   };
 
   const handleRemove = async (id: string) => {
+    if (!id) { console.warn('Remove called with no id'); return; }
     setActionLoading(id);
-    await supabase.from("exercises").delete().eq("id", id);
+    const { error } = await supabase.from("exercises").delete().eq("id", id);
+    if (error) console.error("Remove failed:", error);
     queryClient.invalidateQueries({ queryKey: ["ai-exercises-pending"] });
     setActionLoading(null);
   };
