@@ -61,10 +61,9 @@ export default function Phases() {
     enabled: !!user,
   });
 
-  const statusOrder: Record<string, number> = { active: 1, draft: 2, completed: 3 };
-  const sorted = [...phases].sort((a: any, b: any) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const currentPhases = sorted.filter((p: any) => p.status !== "completed");
-  const completedPhases = sorted.filter((p: any) => p.status === "completed");
+  const activePhases = phases.filter((p: any) => p.status === "active");
+  const draftPhases = phases.filter((p: any) => p.status === "draft");
+  const completedPhases = phases.filter((p: any) => p.status === "completed");
 
   const activateMutation = useMutation({
     mutationFn: async (phaseId: string) => {
@@ -108,13 +107,25 @@ export default function Phases() {
         </div>
       ) : (
         <>
-          {/* Active + Draft phases */}
-          {currentPhases.length > 0 && (
+          {/* Active phase */}
+          {activePhases.length > 0 && (
             <div className="space-y-3">
-              {currentPhases.map((phase: any) => (
+              {activePhases.map((phase: any) => (
                 <PhaseCard key={phase.id} phase={phase} navigate={navigate} activateMutation={activateMutation} statusColors={statusColors} />
               ))}
             </div>
+          )}
+
+          {/* Draft phases */}
+          {draftPhases.length > 0 && (
+            <>
+              <h2 className="text-sm font-medium text-muted-foreground mt-8 mb-3">Draft phases</h2>
+              <div className="space-y-3">
+                {draftPhases.map((phase: any) => (
+                  <PhaseCard key={phase.id} phase={phase} navigate={navigate} activateMutation={activateMutation} statusColors={statusColors} />
+                ))}
+              </div>
+            </>
           )}
 
           {/* Completed phases */}
