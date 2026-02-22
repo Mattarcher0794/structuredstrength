@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { NutritionCard } from "@/components/NutritionCard";
 import { FEATURES } from "@/config/features";
+import { findMatchingExercise } from "@/lib/exerciseMatching";
+import { insertAIExercise } from "@/lib/exerciseInsert";
 import {
   Sheet,
   SheetContent,
@@ -265,6 +267,8 @@ export default function Today() {
 
   function NoPhaseEmptyState({ userId }: { userId?: string }) {
     const nav = useNavigate();
+    const [agentState, setAgentState] = useState<"idle" | "loading" | "error">("idle");
+
     const { data: phaseCount, isLoading } = useQuery({
       queryKey: ["all-phases-count", userId],
       queryFn: async () => {
@@ -277,44 +281,131 @@ export default function Today() {
       enabled: !!userId,
     });
 
+    const handleCreateForMe = async () => {
+      if (!userId) return;
+      setAgentState("loading");
+
+      try {
+        const { data, error } = await supabase.functions.invoke("suggest-plan", {
+          body: { lengthWeeks: 6, isReturningUser: false, lastTwoPhases: [], recentSessions: [] },
+        });
+        if (error) throw error;
+        const plan = data?.plan;
+        if (!plan?.planName || !Array.isArray(plan.days)) throw new Error("Invalid plan");
+
+        // Create phase
+        const { data: phase } = await supabase
+          .from("phases")
+          .insert({ user_id: userId, name: plan.planName, length_weeks: 6 })
+          .select()
+          .single();
+        if (!phase) throw new Error("Failed to create phase");
+
+        // Insert days
+        const dayRows = plan.days.map((d: any) => ({
+          phase_id: phase.id,
+          day_of_week: d.dayOfWeek,
+          day_type: d.dayType,
+          workout_name: d.workoutName,
+        }));
+        const { data: insertedDays } = await supabase.from("phase_days").insert(dayRows).select();
+        if (!insertedDays) throw new Error("Failed to create days");
+
+        // Insert exercises
+        for (const day of plan.days) {
+          if (!day.exercises?.length) continue;
+          const phaseDay = insertedDays.find((d: any) => d.day_of_week === day.dayOfWeek);
+          if (!phaseDay) continue;
+
+          for (let i = 0; i < day.exercises.length; i++) {
+            const ex = day.exercises[i];
+            let exerciseId = await findMatchingExercise(ex.name);
+            if (!exerciseId) {
+              exerciseId = await insertAIExercise({
+                name: ex.name,
+                muscle_group: ex.muscleGroup,
+                sub_muscle: ex.subMuscle,
+                equipment: ex.equipment,
+                movement_pattern: ex.movementPattern,
+                is_unilateral: ex.isUnilateral,
+              });
+            }
+            if (!exerciseId) continue;
+            await supabase.from("phase_day_exercises").insert({
+              phase_day_id: phaseDay.id,
+              exercise_id: exerciseId,
+              order_index: i,
+              num_sets: ex.sets,
+              min_reps: ex.minReps,
+              max_reps: ex.maxReps,
+            });
+          }
+        }
+
+        nav(`/phases/${phase.id}`);
+      } catch (e) {
+        console.error("Agent error:", e);
+        setAgentState("error");
+      }
+    };
+
     if (isLoading) return null;
 
     const isNew = (phaseCount ?? 0) === 0;
 
+    // New user loading state
+    if (isNew && agentState === "loading") {
+      return (
+        <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-3">
+          <Sparkles className="mx-auto h-8 w-8 text-primary/50 animate-pulse" />
+          <h2 className="text-lg font-display font-semibold">Building your first plan...</h2>
+          <p className="text-sm text-muted-foreground">This will only take a moment</p>
+        </div>
+      );
+    }
+
     return (
-      <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-4">
-        {isNew ? (
-          <Sparkles className="mx-auto h-8 w-8 text-primary/50" />
-        ) : (
-          <Dumbbell className="mx-auto h-8 w-8 text-primary/50" />
-        )}
+      <div className="space-y-2">
+        <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-4">
+          {isNew ? (
+            <Sparkles className="mx-auto h-8 w-8 text-primary/50" />
+          ) : (
+            <Dumbbell className="mx-auto h-8 w-8 text-primary/50" />
+          )}
 
-        <div>
-          <h2 className="text-lg font-display font-semibold mb-1">
-            {isNew ? "Let's build your first plan" : "Ready for your next block?"}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {isNew
-              ? "Tell us how you train and we'll create a personalised programme to get you started."
-              : "You've finished your last phase. Start a new one to keep your progress going."}
+          <div>
+            <h2 className="text-lg font-display font-semibold mb-1">
+              {isNew ? "Let's build your first plan" : "Ready for your next block?"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {isNew
+                ? "Tell us how you train and we'll create a personalised programme to get you started."
+                : "You've finished your last phase. Start a new one to keep your progress going."}
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-2">
+            <Button
+              onClick={isNew ? handleCreateForMe : () => nav("/phases/new")}
+              className="w-full rounded-2xl py-5"
+            >
+              {isNew ? "Create a plan for me" : "Suggest my next plan"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => nav("/phases/new")}
+              className="w-full rounded-2xl py-5"
+            >
+              {isNew ? "I'll build it myself" : "Build it myself"}
+            </Button>
+          </div>
+        </div>
+
+        {agentState === "error" && (
+          <p className="text-sm text-muted-foreground text-center">
+            Something went wrong — please try again
           </p>
-        </div>
-
-        <div className="space-y-2.5 pt-2">
-          <Button
-            onClick={() => nav("/phases/new?agent=true")}
-            className="w-full rounded-2xl py-5"
-          >
-            {isNew ? "Create a plan for me" : "Suggest my next plan"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => nav("/phases/new")}
-            className="w-full rounded-2xl py-5"
-          >
-            {isNew ? "I'll build it myself" : "Build it myself"}
-          </Button>
-        </div>
+        )}
       </div>
     );
   }
