@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, Sun, Zap, CalendarHeart, Loader2 } from "lucide-react";
+import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2 } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { NutritionCard } from "@/components/NutritionCard";
 import { FEATURES } from "@/config/features";
@@ -30,6 +32,7 @@ export default function Today() {
   const today = new Date();
   const dow = getDayOfWeek();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [exercisesOpen, setExercisesOpen] = useState(false);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -375,29 +378,38 @@ export default function Today() {
 
       <div className="space-y-4">
           <div className="rounded-2xl bg-card border border-border p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
-                <WeekProgressBar />
-                <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
-              </div>
-              <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
-                {exerciseCount} exercises
-              </span>
+            <div>
+              <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+              <WeekProgressBar />
             </div>
 
-            <div className="space-y-2">
-              {todayDay.phase_day_exercises?.
-            sort((a: any, b: any) => a.order_index - b.order_index).
-            map((pde: any) =>
-            <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
-                    <span className="font-medium">{pde.exercises?.name}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {pde.num_sets} × {pde.min_reps}{pde.max_reps !== pde.min_reps ? `–${pde.max_reps}` : ""}
+            <Collapsible open={exercisesOpen} onOpenChange={setExercisesOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full min-h-[44px] py-2 text-left">
+                  <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
+                      {exerciseCount} exercises
                     </span>
+                    <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", exercisesOpen && "rotate-180")} />
                   </div>
-            )}
-            </div>
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="animate-accordion-down data-[state=closed]:animate-accordion-up">
+                <div className="space-y-2 pt-1">
+                  {todayDay.phase_day_exercises?.
+                sort((a: any, b: any) => a.order_index - b.order_index).
+                map((pde: any) =>
+                <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
+                        <span className="font-medium">{pde.exercises?.name}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {pde.num_sets} × {pde.min_reps}{pde.max_reps !== pde.min_reps ? `–${pde.max_reps}` : ""}
+                        </span>
+                      </div>
+                )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {isStrengthDay && !activeSession &&
