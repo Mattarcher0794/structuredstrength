@@ -8,6 +8,7 @@ import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback } from "react";
 import { Progress } from "@/components/ui/progress";
 import { NutritionCard } from "@/components/NutritionCard";
+import { FEATURES } from "@/config/features";
 import {
   Sheet,
   SheetContent,
@@ -224,7 +225,7 @@ export default function Today() {
       </div>
 
       {/* Nutrition card — below greeting, above workout */}
-      <NutritionCard />
+      {FEATURES.showNutrition && <NutritionCard />}
 
       {activeSession &&
       <button
