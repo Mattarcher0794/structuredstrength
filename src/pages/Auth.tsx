@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Eye, EyeOff } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -42,6 +44,17 @@ export default function Auth() {
           </p>
         </div>
 
+        <div className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-primary/50" />
+            AI-built plans
+          </span>
+          <span className="text-border">·</span>
+          <span>Smart progression</span>
+          <span className="text-border">·</span>
+          <span>Gym-ready logging</span>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="space-y-1.5">
@@ -69,16 +82,27 @@ export default function Auth() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="rounded-2xl"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="rounded-2xl pr-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-muted-foreground"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-2xl py-5 text-sm font-medium">
             {loading ? "One moment…" : isLogin ? "Sign in" : "Create account"}
