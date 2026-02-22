@@ -202,7 +202,7 @@ export default function ActiveWorkout() {
           <div className="mx-auto max-w-lg flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Rest</p>
-              <p className="font-display font-bold tabular-nums" style={{ fontSize: "48px", lineHeight: 1.1 }}>
+              <p className="text-2xl font-display font-semibold tabular-nums">
                 {formatTime(restTime)}
               </p>
             </div>
@@ -305,17 +305,6 @@ function ActiveExerciseCard({
             <span className="text-sm text-muted-foreground font-medium w-8 shrink-0">#{nextSet}</span>
             <Input
               type="text"
-              inputMode="decimal"
-              pattern="[0-9]*\.?[0-9]*"
-              placeholder="kg"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
-              style={{ fontSize: "20px" }}
-            />
-            <span className="text-muted-foreground text-sm font-medium">×</span>
-            <Input
-              type="text"
               inputMode="numeric"
               pattern="[0-9]*"
               placeholder="reps"
@@ -324,9 +313,20 @@ function ActiveExerciseCard({
               className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
               style={{ fontSize: "20px" }}
             />
+            <span className="text-muted-foreground text-sm font-medium">×</span>
+            <Input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+              placeholder="kg"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
+              style={{ fontSize: "20px" }}
+            />
           </div>
           <Button
-            className="w-full mt-3 h-14 rounded-xl text-base font-semibold"
+            className="w-full mt-3 h-11 rounded-xl text-base font-semibold"
             disabled={!reps}
             onClick={() => {
               onLogSet(nextSet, reps, weight);
