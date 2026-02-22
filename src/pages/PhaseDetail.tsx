@@ -2,12 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronRight, Copy, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Copy, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import ConfirmBottomSheet from "@/components/ConfirmBottomSheet";
+import AIPlanSuggestionCard, { type AIPlan } from "@/components/AIPlanSuggestionCard";
+import { fetchUserHistory, callSuggestPlan } from "@/lib/aiPlanService";
+import { findMatchingExercise } from "@/lib/exerciseMatching";
+import { insertAIExercise } from "@/lib/exerciseInsert";
 
 const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const dayTypes = ["rest", "cardio", "strength"] as const;
@@ -24,6 +28,11 @@ export default function PhaseDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+
+  // AI suggestion state
+  const [aiState, setAiState] = useState<"idle" | "loading" | "suggestion" | "error">("idle");
+  const [aiPlan, setAiPlan] = useState<AIPlan | null>(null);
+  const [applyingPlan, setApplyingPlan] = useState(false);
 
   const { data: phase } = useQuery({
     queryKey: ["phase", id],
@@ -71,36 +80,24 @@ export default function PhaseDetail() {
 
   const removeMutation = useMutation({
     mutationFn: async () => {
-      // Get phase_days
       const { data: phaseDays } = await supabase.from("phase_days").select("id").eq("phase_id", id!);
       const dayIds = (phaseDays ?? []).map((d: any) => d.id);
-
-      // Get workout_sessions
       const { data: sessions } = await supabase.from("workout_sessions").select("id").eq("phase_id", id!);
       const sessionIds = (sessions ?? []).map((s: any) => s.id);
 
-      // Delete session_exercise_swaps & session_sets for those sessions
       if (sessionIds.length > 0) {
         await supabase.from("session_exercise_swaps").delete().in("workout_session_id", sessionIds);
         await supabase.from("session_sets").delete().in("workout_session_id", sessionIds);
       }
-
-      // Delete workout_sessions
       if (sessionIds.length > 0) {
         await supabase.from("workout_sessions").delete().in("id", sessionIds);
       }
-
-      // Delete phase_day_exercises
       if (dayIds.length > 0) {
         await supabase.from("phase_day_exercises").delete().in("phase_day_id", dayIds);
       }
-
-      // Delete phase_days
       if (dayIds.length > 0) {
         await supabase.from("phase_days").delete().in("id", dayIds);
       }
-
-      // Delete the phase
       const { error } = await supabase.from("phases").delete().eq("id", id!);
       if (error) throw error;
     },
@@ -119,7 +116,6 @@ export default function PhaseDetail() {
 
   const copyMutation = useMutation({
     mutationFn: async () => {
-      // Create new phase
       const { data: newPhase, error: phaseErr } = await supabase
         .from("phases")
         .insert({ user_id: user!.id, name: `${phase!.name} (v2)`, length_weeks: phase!.length_weeks, status: "draft" })
@@ -127,7 +123,6 @@ export default function PhaseDetail() {
         .single();
       if (phaseErr || !newPhase) throw phaseErr || new Error("Failed to create phase");
 
-      // Copy phase_days
       const { data: origDays } = await supabase.from("phase_days").select("*").eq("phase_id", id!).order("day_of_week");
       if (origDays && origDays.length > 0) {
         const newDaysInsert = origDays.map((d: any) => ({
@@ -139,15 +134,12 @@ export default function PhaseDetail() {
         const { data: newDays, error: daysErr } = await supabase.from("phase_days").insert(newDaysInsert).select("id, day_of_week");
         if (daysErr) throw daysErr;
 
-        // Map original day_of_week → new day id
         const dayMap = new Map<number, string>();
         (newDays ?? []).forEach((nd: any) => dayMap.set(nd.day_of_week, nd.id));
 
-        // Copy exercises for each day
         const origDayIds = origDays.map((d: any) => d.id);
         const { data: origExercises } = await supabase.from("phase_day_exercises").select("*").in("phase_day_id", origDayIds);
         if (origExercises && origExercises.length > 0) {
-          // Need to map original phase_day_id → day_of_week
           const origDayIdToWeek = new Map<string, number>();
           origDays.forEach((d: any) => origDayIdToWeek.set(d.id, d.day_of_week));
 
@@ -177,9 +169,105 @@ export default function PhaseDetail() {
     },
   });
 
+  // --- AI suggestion handlers ---
+  const handleSuggest = async () => {
+    if (!user || !phase) return;
+    setAiState("loading");
+    setAiPlan(null);
+
+    try {
+      const history = await fetchUserHistory(user.id);
+      const plan = await callSuggestPlan({
+        lengthWeeks: phase.length_weeks,
+        phaseName: phase.name,
+        ...history,
+      });
+
+      setAiPlan(plan);
+      setAiState("suggestion");
+    } catch (e) {
+      console.error("AI suggest error:", e);
+      setAiState("error");
+    }
+  };
+
+  const handleUsePlan = async () => {
+    if (!aiPlan || !user || !id) return;
+    setApplyingPlan(true);
+
+    try {
+      // Delete existing phase_days and their exercises
+      const { data: existingDays } = await supabase.from("phase_days").select("id").eq("phase_id", id);
+      const existingDayIds = (existingDays ?? []).map((d) => d.id);
+      if (existingDayIds.length > 0) {
+        await supabase.from("phase_day_exercises").delete().in("phase_day_id", existingDayIds);
+        await supabase.from("phase_days").delete().in("id", existingDayIds);
+      }
+
+      // Insert new days
+      const dayRows = aiPlan.days.map((d) => ({
+        phase_id: id,
+        day_of_week: d.dayOfWeek,
+        day_type: d.dayType,
+        workout_name: d.workoutName,
+      }));
+      const { data: insertedDays } = await supabase.from("phase_days").insert(dayRows).select();
+      if (!insertedDays) throw new Error("Failed to create days");
+
+      // Insert exercises
+      for (const day of aiPlan.days) {
+        if (!day.exercises || day.exercises.length === 0) continue;
+        const phaseDay = insertedDays.find((d) => d.day_of_week === day.dayOfWeek);
+        if (!phaseDay) continue;
+
+        for (let i = 0; i < day.exercises.length; i++) {
+          const ex = day.exercises[i];
+          let exerciseId = await findMatchingExercise(ex.name);
+          if (!exerciseId) {
+            exerciseId = await insertAIExercise({
+              name: ex.name,
+              muscle_group: ex.muscleGroup as any,
+              sub_muscle: ex.subMuscle,
+              equipment: ex.equipment as any,
+              movement_pattern: ex.movementPattern as any,
+              is_unilateral: ex.isUnilateral,
+            });
+          }
+          if (!exerciseId) continue;
+
+          await supabase.from("phase_day_exercises").insert({
+            phase_day_id: phaseDay.id,
+            exercise_id: exerciseId,
+            order_index: i,
+            num_sets: ex.sets,
+            min_reps: ex.minReps,
+            max_reps: ex.maxReps,
+          });
+        }
+      }
+
+      // Refresh in place
+      setAiState("idle");
+      setAiPlan(null);
+      queryClient.invalidateQueries({ queryKey: ["phase-days", id] });
+      toast({ title: "Plan applied!" });
+    } catch (e) {
+      console.error("Apply plan error:", e);
+      toast({ title: "Couldn't apply plan", variant: "destructive" });
+    } finally {
+      setApplyingPlan(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    setAiState("idle");
+    setAiPlan(null);
+  };
+
   if (!phase) return null;
 
   const isActive = phase.status === "active";
+  const isDraft = phase.status === "draft";
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6">
@@ -193,7 +281,51 @@ export default function PhaseDetail() {
           {phase.status}
         </span>
       </div>
-      <p className="text-sm text-muted-foreground mb-6">{phase.length_weeks} weeks · Tap a day to cycle its type</p>
+      <p className="text-sm text-muted-foreground mb-4">{phase.length_weeks} weeks · Tap a day to cycle its type</p>
+
+      {/* AI suggestion entry point — draft only */}
+      {isDraft && aiState === "idle" && (
+        <button
+          onClick={handleSuggest}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Suggest a plan for this phase
+        </button>
+      )}
+
+      {isDraft && aiState === "loading" && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Building your plan…
+        </div>
+      )}
+
+      {isDraft && aiState === "error" && (
+        <div className="space-y-2 mb-4">
+          <p className="text-sm text-muted-foreground">
+            Couldn't generate a suggestion right now. You can still build your plan manually.
+          </p>
+          <button
+            onClick={() => setAiState("idle")}
+            className="text-sm text-muted-foreground underline hover:text-foreground"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {isDraft && aiState === "suggestion" && aiPlan && (
+        <div className="mb-6">
+          <AIPlanSuggestionCard
+            plan={aiPlan}
+            applying={applyingPlan}
+            onUsePlan={handleUsePlan}
+            onDismiss={handleDismiss}
+            dismissLabel="Discard suggestion"
+          />
+        </div>
+      )}
 
       <div className="space-y-2 mb-6">
         {days.map((day: any, i: number) => (
