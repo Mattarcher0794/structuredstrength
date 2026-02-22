@@ -39,24 +39,25 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { lengthWeeks, isReturningUser, lastTwoPhases, recentSessions } = await req.json();
+    const { lengthWeeks, isReturningUser, lastTwoPhases, recentSessions, phaseName } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     let userPrompt: string;
+    const phaseNameLine = phaseName ? `Phase name: ${phaseName}\n` : "";
 
     if (!isReturningUser) {
       userPrompt = `Create a beginner-friendly training phase for someone just starting out.
+${phaseNameLine}Phase length: ${lengthWeeks} weeks.
 Use exactly 3 strength days and 4 rest days per week.
 Focus on a balanced upper/lower split.
-Phase length: ${lengthWeeks} weeks.
 
 Return this exact JSON structure:
 ${JSON_STRUCTURE}`;
     } else {
       userPrompt = `Analyse this user's training history and generate a progressive next phase.
-Phase length: ${lengthWeeks} weeks.
+${phaseNameLine}Phase length: ${lengthWeeks} weeks.
 
 Previous phases:
 ${JSON.stringify(lastTwoPhases)}
@@ -69,6 +70,7 @@ Rules:
 - Maintain a similar weekly structure to what the user has been doing
 - Rotate exercise variations where beneficial for hypertrophy
 - Keep the same number of strength days as the previous phase
+- Use the phase name as inspiration for the training focus if relevant
 
 Return this exact JSON structure:
 ${JSON_STRUCTURE}`;
