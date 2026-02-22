@@ -17,32 +17,41 @@ export type Database = {
       exercises: {
         Row: {
           created_at: string
+          created_by: string | null
           equipment: string
           id: string
+          is_approved: boolean
           is_unilateral: boolean
           movement_pattern: string
           muscle_group: string
           name: string
+          source: string
           sub_muscle: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           equipment: string
           id?: string
+          is_approved?: boolean
           is_unilateral?: boolean
           movement_pattern: string
           muscle_group: string
           name: string
+          source?: string
           sub_muscle: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           equipment?: string
           id?: string
+          is_approved?: boolean
           is_unilateral?: boolean
           movement_pattern?: string
           muscle_group?: string
           name?: string
+          source?: string
           sub_muscle?: string
         }
         Relationships: []
