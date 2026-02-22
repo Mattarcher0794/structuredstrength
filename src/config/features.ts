@@ -1,3 +1,3 @@
 export const FEATURES = {
-  showNutrition: false,
+  showNutrition: true,
 } as const;
