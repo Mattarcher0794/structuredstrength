@@ -142,6 +142,26 @@ export default function Today() {
     enabled: !!user && !!activePhase
   });
 
+  // Check if today's workout is already completed
+  const todayStr = format(today, "yyyy-MM-dd");
+  const { data: completedToday } = useQuery({
+    queryKey: ["completed-today", user?.id, activePhase?.id, todayDay?.id, todayStr],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("phase_day_id", todayDay!.id)
+        .eq("status", "completed")
+        .eq("date", todayStr)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user && !!activePhase && !!todayDay
+  });
+
+  const isCompletedToday = !!completedToday;
+
   const plannedStrengthCount = strengthDays.length;
   const remainingCount = Math.max(plannedStrengthCount - weeklyCompletedCount, 0);
 
@@ -377,63 +397,81 @@ export default function Today() {
         </div> :
 
       <div className="space-y-4">
-          <div className="rounded-2xl bg-card border border-border p-5">
-            <div>
-              <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
-              <WeekProgressBar />
+          {isCompletedToday ? (
+            <div className="rounded-2xl bg-card/70 border border-border/50 p-5">
+              <div>
+                <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+                <WeekProgressBar />
+              </div>
+              <div className="flex items-center justify-between min-h-[44px] py-2">
+                <h2 className="text-lg font-display text-muted-foreground">{todayDay.workout_name || "Strength"}</h2>
+                <span className="rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: "hsl(152 81% 91%)", color: "hsl(166 72% 20%)" }}>
+                  Done
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Completed today</p>
             </div>
-
-            <div>
-              <button
-                onClick={() => setExercisesOpen(o => !o)}
-                className="flex items-center justify-between w-full min-h-[44px] py-2 text-left"
-              >
-                <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
-                    {exerciseCount} exercises
-                  </span>
-                  <ChevronDown
-                    className="h-4 w-4 text-muted-foreground"
-                    style={{
-                      transform: exercisesOpen ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform 250ms ease-in-out",
-                    }}
-                  />
+          ) : (
+            <>
+              <div className="rounded-2xl bg-card border border-border p-5">
+                <div>
+                  <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+                  <WeekProgressBar />
                 </div>
-              </button>
-              <div
-                style={{
-                  maxHeight: exercisesOpen ? "500px" : "0px",
-                  opacity: exercisesOpen ? 1 : 0,
-                  overflow: "hidden",
-                  transition: exercisesOpen
-                    ? "max-height 250ms ease-in-out, opacity 200ms ease-in-out 50ms"
-                    : "max-height 250ms ease-in-out, opacity 200ms ease-in-out",
-                }}
-              >
-                <div className="space-y-2 pt-1">
-                  {todayDay.phase_day_exercises?.
-                sort((a: any, b: any) => a.order_index - b.order_index).
-                map((pde: any) =>
-                <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
-                        <span className="font-medium">{pde.exercises?.name}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {pde.num_sets} × {pde.min_reps}{pde.max_reps !== pde.min_reps ? `–${pde.max_reps}` : ""}
-                        </span>
-                      </div>
-                )}
+
+                <div>
+                  <button
+                    onClick={() => setExercisesOpen(o => !o)}
+                    className="flex items-center justify-between w-full min-h-[44px] py-2 text-left"
+                  >
+                    <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
+                        {exerciseCount} exercises
+                      </span>
+                      <ChevronDown
+                        className="h-4 w-4 text-muted-foreground"
+                        style={{
+                          transform: exercisesOpen ? "rotate(180deg)" : "rotate(0deg)",
+                          transition: "transform 250ms ease-in-out",
+                        }}
+                      />
+                    </div>
+                  </button>
+                  <div
+                    style={{
+                      maxHeight: exercisesOpen ? "500px" : "0px",
+                      opacity: exercisesOpen ? 1 : 0,
+                      overflow: "hidden",
+                      transition: exercisesOpen
+                        ? "max-height 250ms ease-in-out, opacity 200ms ease-in-out 50ms"
+                        : "max-height 250ms ease-in-out, opacity 200ms ease-in-out",
+                    }}
+                  >
+                    <div className="space-y-2 pt-1">
+                      {todayDay.phase_day_exercises?.
+                    sort((a: any, b: any) => a.order_index - b.order_index).
+                    map((pde: any) =>
+                    <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
+                            <span className="font-medium">{pde.exercises?.name}</span>
+                            <span className="text-muted-foreground text-xs">
+                              {pde.num_sets} × {pde.min_reps}{pde.max_reps !== pde.min_reps ? `–${pde.max_reps}` : ""}
+                            </span>
+                          </div>
+                    )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {isStrengthDay && !activeSession &&
-        <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
-              Start workout
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-        }
+              {isStrengthDay && !activeSession &&
+            <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
+                  Start workout
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+            }
+            </>
+          )}
         </div>
       }
     </div>);
