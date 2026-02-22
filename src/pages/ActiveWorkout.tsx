@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ export default function ActiveWorkout() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Rest timer
   const [restTime, setRestTime] = useState(0);
@@ -19,6 +21,22 @@ export default function ActiveWorkout() {
   const [restTarget, setRestTarget] = useState(90);
   const restStartRef = useRef<number>(0);
   const restTargetRef = useRef<number>(90);
+
+  // Fetch user profile for default rest seconds
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("default_rest_seconds")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const defaultRest = profile?.default_rest_seconds ?? 90;
 
   // Swap
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
@@ -50,7 +68,7 @@ export default function ActiveWorkout() {
   });
 
   const logSet = useMutation({
-    mutationFn: async ({ exerciseId, exerciseName, setNumber, reps, weight }: any) => {
+    mutationFn: async ({ exerciseId, exerciseName, setNumber, reps, weight, exerciseRestSeconds }: any) => {
       await supabase.from("session_sets").insert({
         workout_session_id: sessionId!,
         exercise_id: exerciseId,
@@ -59,13 +77,16 @@ export default function ActiveWorkout() {
         reps: parseInt(reps),
         weight: parseFloat(weight) || 0,
       });
+      return { exerciseRestSeconds };
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
-      // Auto-start rest timer
+      // Determine rest duration: exercise-specific > profile default > 90
+      const duration = variables.exerciseRestSeconds ?? defaultRest;
       restStartRef.current = Date.now();
-      restTargetRef.current = restTarget;
-      setRestTime(restTarget);
+      restTargetRef.current = duration;
+      setRestTarget(duration);
+      setRestTime(duration);
       setRestRunning(true);
     },
   });
@@ -146,7 +167,7 @@ export default function ActiveWorkout() {
               maxReps={pde.max_reps}
               completedSets={completedSets}
               onLogSet={(setNumber, reps, weight) =>
-                logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight })
+                logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
               }
               onSwap={() => {
                 setSwapExerciseId(pde.exercise_id);
