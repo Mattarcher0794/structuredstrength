@@ -35,8 +35,8 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="flex min-h-screen items-start justify-center px-6 pt-[max(4rem,env(safe-area-inset-top,2rem)_+_2rem)] pb-10">
+      <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-semibold tracking-tight">Structured Strength</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -44,14 +44,12 @@ export default function Auth() {
           </p>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+        <div className="flex flex-col items-center gap-1.5 py-2 text-[10px] uppercase tracking-widest text-muted-foreground">
           <span className="flex items-center gap-1">
             <Sparkles className="h-3 w-3 text-primary/50" />
             AI-built plans
           </span>
-          <span className="text-border">·</span>
           <span>Smart progression</span>
-          <span className="text-border">·</span>
           <span>Gym-ready logging</span>
         </div>
 
