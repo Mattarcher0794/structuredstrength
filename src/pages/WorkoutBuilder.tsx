@@ -89,7 +89,7 @@ export default function WorkoutBuilder() {
     setWorkoutName(day?.workout_name ?? "");
   }, [day?.workout_name]);
 
-  const muscleGroups = ["all", "Upper", "Lower", "Core"];
+  const muscleGroups = ["all", "Upper", "Lower", "Core", "Full Body"];
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
