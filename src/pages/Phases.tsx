@@ -61,8 +61,10 @@ export default function Phases() {
     enabled: !!user,
   });
 
-  const currentPhases = phases.filter((p: any) => p.status !== "completed");
-  const completedPhases = phases.filter((p: any) => p.status === "completed");
+  const statusOrder: Record<string, number> = { active: 1, draft: 2, completed: 3 };
+  const sorted = [...phases].sort((a: any, b: any) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const currentPhases = sorted.filter((p: any) => p.status !== "completed");
+  const completedPhases = sorted.filter((p: any) => p.status === "completed");
 
   const activateMutation = useMutation({
     mutationFn: async (phaseId: string) => {
