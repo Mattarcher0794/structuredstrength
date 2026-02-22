@@ -329,16 +329,26 @@ export default function PhaseCreate() {
 
         {/* Suggestion Card */}
         {aiState === "suggestion" && aiPlan && (
-          <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
-            <h2 className="text-lg font-semibold">{aiPlan.planName}</h2>
+          <div className="rounded-2xl border border-border bg-card p-5 space-y-5">
+            {/* Card label */}
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Suggested plan
+              </span>
+            </div>
 
-            <div className="space-y-2">
+            {/* Plan name */}
+            <h2 className="text-xl font-semibold">{aiPlan.planName}</h2>
+
+            {/* Day rows */}
+            <div className="divide-y divide-border">
               {aiPlan.days
                 .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
                 .map((day) => (
-                  <div key={day.dayOfWeek} className="space-y-1">
+                  <div key={day.dayOfWeek} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium w-8">{DAY_NAMES[day.dayOfWeek - 1]}</span>
+                      <span className="text-sm font-semibold w-10 shrink-0">{DAY_NAMES[day.dayOfWeek - 1]}</span>
                       <Badge variant="outline" className={`text-xs ${dayTypeBadge(day.dayType)}`}>
                         {day.dayType.charAt(0).toUpperCase() + day.dayType.slice(1)}
                       </Badge>
@@ -347,10 +357,11 @@ export default function PhaseCreate() {
                       )}
                     </div>
                     {day.exercises && day.exercises.length > 0 && (
-                      <div className="ml-10 space-y-0.5">
+                      <div className="ml-12 space-y-0.5">
                         {day.exercises.map((ex, i) => (
-                          <p key={i} className="text-xs text-muted-foreground">
-                            {ex.name} · {ex.sets}×{ex.minReps}–{ex.maxReps} reps
+                          <p key={i} className="text-xs">
+                            <span className="text-muted-foreground">{ex.name}</span>
+                            <span className="text-muted-foreground/50"> — {ex.sets}×{ex.minReps}–{ex.maxReps} reps</span>
                           </p>
                         ))}
                       </div>
@@ -359,15 +370,19 @@ export default function PhaseCreate() {
                 ))}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              This is a starting point — you can edit everything after creating
-            </p>
+            {/* Footer note */}
+            <div className="border-t border-border pt-4">
+              <p className="text-xs italic text-muted-foreground/70">
+                This is a starting point — you can edit everything after creating
+              </p>
+            </div>
 
-            <div className="flex items-center gap-3 pt-1">
+            {/* Actions */}
+            <div className="space-y-3 pt-2">
               <Button
                 onClick={handleUsePlan}
                 disabled={applyingPlan}
-                className="rounded-2xl py-5 flex-1"
+                className="w-full rounded-2xl py-5"
               >
                 {applyingPlan ? (
                   <>
@@ -380,7 +395,7 @@ export default function PhaseCreate() {
               </Button>
               <button
                 onClick={handleDismiss}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Start from scratch
               </button>
