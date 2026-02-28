@@ -574,12 +574,14 @@ function ActiveExerciseCard({
             />
             <span className="text-muted-foreground text-sm font-medium">×</span>
             <Input
+              ref={weightInputRef}
               type="text"
               inputMode="decimal"
               pattern="[0-9]*\.?[0-9]*"
               placeholder="kg"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
+              onFocus={() => weightInputRef.current?.select()}
               className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
               style={{ fontSize: "20px" }}
             />
