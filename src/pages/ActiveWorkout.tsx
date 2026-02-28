@@ -198,6 +198,48 @@ export default function ActiveWorkout() {
               />
             );
           })}
+
+          {/* Ad-hoc exercises */}
+          {adHocExercises.map((adHoc, i) => {
+            const globalIndex = exercises.length + i;
+            const completedSets = sessionSets.filter((s: any) => s.exercise_id === adHoc.exerciseId);
+            const isActive = activeIndex === globalIndex;
+
+            return isActive ? (
+              <ActiveExerciseCard
+                key={adHoc.id}
+                exerciseId={adHoc.exerciseId}
+                exerciseName={adHoc.exerciseName}
+                numSets={adHoc.numSets}
+                minReps={adHoc.minReps}
+                maxReps={adHoc.maxReps}
+                completedSets={completedSets}
+                onLogSet={(setNumber, reps, weight) =>
+                  logSet.mutate({ exerciseId: adHoc.exerciseId, exerciseName: adHoc.exerciseName, setNumber, reps, weight, exerciseRestSeconds: null })
+                }
+                sessionId={sessionId!}
+                onSwap={() => {}}
+                isSwapped={false}
+              />
+            ) : (
+              <InactiveExerciseCard
+                key={adHoc.id}
+                exerciseName={adHoc.exerciseName}
+                numSets={adHoc.numSets}
+                completedCount={completedSets.length}
+                onClick={() => setActiveIndex(globalIndex)}
+              />
+            );
+          })}
+
+          {/* Add exercise CTA */}
+          <button
+            onClick={() => setAddSheetOpen(true)}
+            className="w-full flex items-center justify-center gap-2 min-h-[44px] py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add exercise
+          </button>
         </div>
       </div>
 
