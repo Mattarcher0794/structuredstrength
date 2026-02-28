@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ExerciseSwapSheet from "@/components/ExerciseSwapSheet";
 
