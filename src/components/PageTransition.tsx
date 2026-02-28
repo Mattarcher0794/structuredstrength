@@ -8,7 +8,7 @@ const pageVariants = {
 
 const pageTransition = {
   duration: 0.15,
-  ease: "easeInOut",
+  ease: "easeInOut" as const,
 };
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
