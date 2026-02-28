@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Clock } from "lucide-react";
+import { ChevronRight, Clock, Trophy } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
+import { detectSessionPBs } from "@/lib/historyPBDetection";
 
 export default function History() {
   const { user } = useAuth();
@@ -24,6 +25,15 @@ export default function History() {
     enabled: !!user,
   });
 
+  const { data: pbSessionIds } = useQuery({
+    queryKey: ["history-pbs", sessions.map((s: any) => s.id).join(",")],
+    queryFn: () =>
+      detectSessionPBs(
+        sessions.map((s: any) => ({ id: s.id, started_at: s.started_at }))
+      ),
+    enabled: sessions.length > 0,
+  });
+
   return (
     <div className="mx-auto max-w-lg px-5 pt-12">
       <h1 className="text-2xl font-semibold mb-6">History</h1>
@@ -42,6 +52,7 @@ export default function History() {
             const duration = s.completed_at && s.started_at
               ? differenceInMinutes(new Date(s.completed_at), new Date(s.started_at))
               : null;
+            const hasPB = pbSessionIds?.has(s.id) ?? false;
             return (
               <button
                 key={s.id}
@@ -57,7 +68,10 @@ export default function History() {
                       {` · ${s.session_sets?.length || 0} sets`}
                     </p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    {hasPB && <Trophy className="h-3.5 w-3.5" style={{ color: "#B8860B" }} />}
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
               </button>
             );
