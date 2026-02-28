@@ -30,6 +30,6 @@ export function isPersonalBest(
   previousBest: number | null
 ): boolean {
   if (weight <= 0) return false;
-  if (previousBest === null) return true;
+  if (previousBest === null) return false;
   return weight > previousBest;
 }
