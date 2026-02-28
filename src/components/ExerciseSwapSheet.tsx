@@ -11,6 +11,9 @@ interface Props {
   originalExerciseId: string;
   muscleGroup: string;
   movementPattern: string;
+  title?: string;
+  /** When set, selecting an exercise calls this instead of performing a swap */
+  onSelect?: (exercise: { id: string; name: string; muscle_group: string; movement_pattern: string; equipment: string; sub_muscle: string }) => void;
 }
 
 export default function ExerciseSwapSheet({ open, onClose, sessionId, originalExerciseId, muscleGroup, movementPattern }: Props) {
