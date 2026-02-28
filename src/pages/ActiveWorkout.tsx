@@ -54,6 +54,13 @@ export default function ActiveWorkout() {
     numSets: number; minReps: number; maxReps: number;
   }>>([]);
 
+  // PB tracking
+  const [sessionPBs, setSessionPBs] = useState<Array<{
+    exerciseId: string;
+    exerciseName: string;
+    weight: number;
+  }>>([]);
+
   const { data: session } = useQuery({
     queryKey: ["workout-session", sessionId],
     queryFn: async () => {
