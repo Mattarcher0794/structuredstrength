@@ -317,7 +317,7 @@ function EditableSetPill({
         onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
         className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 active:bg-secondary/60"
       >
-        {set.weight}kg × {set.reps}
+        {set.reps} × {set.weight}kg
       </button>
     );
   }
