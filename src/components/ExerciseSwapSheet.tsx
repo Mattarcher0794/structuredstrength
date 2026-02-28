@@ -20,18 +20,25 @@ export default function ExerciseSwapSheet({ open, onClose, sessionId, originalEx
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
+  const isAddMode = !!onSelect;
+
   const { data: alternatives = [] } = useQuery({
-    queryKey: ["swap-alternatives", muscleGroup, movementPattern],
+    queryKey: ["swap-alternatives", muscleGroup, movementPattern, isAddMode],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("exercises")
         .select("*")
-        .eq("muscle_group", muscleGroup)
-        .neq("id", originalExerciseId)
         .order("name");
+      if (muscleGroup) {
+        query = query.eq("muscle_group", muscleGroup);
+      }
+      if (originalExerciseId) {
+        query = query.neq("id", originalExerciseId);
+      }
+      const { data } = await query;
       return data ?? [];
     },
-    enabled: open && !!muscleGroup,
+    enabled: open,
   });
 
   // Sort: same movement pattern first
