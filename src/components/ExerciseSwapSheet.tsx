@@ -19,8 +19,24 @@ interface Props {
 export default function ExerciseSwapSheet({ open, onClose, sessionId, originalExerciseId, muscleGroup, movementPattern, title, onSelect }: Props) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [viewportHeight, setViewportHeight] = useState(window.visualViewport?.height ?? window.innerHeight);
 
   const isAddMode = !!onSelect;
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
+    };
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => searchInputRef.current?.focus(), 150);
+    }
+  }, [open]);
 
   const { data: alternatives = [] } = useQuery({
     queryKey: ["swap-alternatives", muscleGroup, movementPattern, isAddMode],
@@ -64,13 +80,19 @@ export default function ExerciseSwapSheet({ open, onClose, sessionId, originalEx
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh]">
-        <SheetHeader>
+      <SheetContent side="bottom" className="rounded-t-3xl flex flex-col" style={{ maxHeight: `${viewportHeight * 0.9}px` }}>
+        <SheetHeader className="shrink-0">
           <SheetTitle className="text-left">{title || "Swap exercise"}</SheetTitle>
         </SheetHeader>
-        <p className="text-xs text-muted-foreground mb-3">Same muscle group · similar movements shown first</p>
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="rounded-xl mb-3 h-9 text-sm" />
-        <div className="overflow-y-auto max-h-[45vh] space-y-1">
+        <p className="text-xs text-muted-foreground mb-3 shrink-0">Same muscle group · similar movements shown first</p>
+        <Input
+          ref={searchInputRef}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search…"
+          className="rounded-xl mb-3 h-9 text-sm shrink-0"
+        />
+        <div className="flex-1 overflow-y-auto space-y-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           {sorted.map((ex: any) => (
             <button
               key={ex.id}
