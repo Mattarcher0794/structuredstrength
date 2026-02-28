@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ExerciseSwapSheet from "@/components/ExerciseSwapSheet";
+import ExerciseSearch from "@/components/ExerciseSearch";
 
 export default function ActiveWorkout() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -277,24 +277,28 @@ export default function ActiveWorkout() {
 
       {!restRunning && restTime === 0 && null}
 
-      {/* Swap Sheet */}
-      <ExerciseSwapSheet
+      {/* Swap Exercise Overlay */}
+      <ExerciseSearch
         open={!!swapExerciseId}
         onClose={() => setSwapExerciseId(null)}
-        sessionId={sessionId!}
-        originalExerciseId={swapExerciseId || ""}
-        muscleGroup={swapMuscleGroup}
-        movementPattern={swapMovementPattern}
+        title="Swap exercise"
+        defaultMuscleGroup={swapMuscleGroup || undefined}
+        highlightMovementPattern={swapMovementPattern || undefined}
+        excludeIds={swapExerciseId ? [swapExerciseId] : []}
+        onSelect={async (ex) => {
+          await supabase.from("session_exercise_swaps").upsert(
+            { workout_session_id: sessionId!, original_exercise_id: swapExerciseId!, replacement_exercise_id: ex.id },
+            { onConflict: "workout_session_id,original_exercise_id" }
+          );
+          queryClient.invalidateQueries({ queryKey: ["session-swaps", sessionId] });
+          setSwapExerciseId(null);
+        }}
       />
 
-      {/* Add Exercise Sheet */}
-      <ExerciseSwapSheet
+      {/* Add Exercise Overlay */}
+      <ExerciseSearch
         open={addSheetOpen}
         onClose={() => setAddSheetOpen(false)}
-        sessionId={sessionId!}
-        originalExerciseId=""
-        muscleGroup=""
-        movementPattern=""
         title="Add exercise"
         onSelect={(ex) => {
           const newIndex = exercises.length + adHocExercises.length;
