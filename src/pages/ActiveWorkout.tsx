@@ -505,16 +505,35 @@ function ActiveExerciseCard({
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
 
-  // Pre-fill weight from last completed set in this session
+  // Fetch previous session weight for set #1
+  const { data: prevWeight } = useQuery({
+    queryKey: ["prev-weight", exerciseId, sessionId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("session_sets")
+        .select("weight")
+        .eq("exercise_id", exerciseId)
+        .neq("workout_session_id", sessionId)
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data?.weight ?? null;
+    },
+  });
+
+  // Pre-fill weight: within-session carry forward, or previous session for set #1
   useEffect(() => {
     if (completedSets.length > 0) {
       const last = completedSets[completedSets.length - 1];
       setWeight(String(last.weight || ""));
+    } else if (prevWeight !== undefined && prevWeight !== null) {
+      setWeight(String(prevWeight));
     }
-  }, [completedSets.length]);
+  }, [completedSets.length, prevWeight]);
 
   return (
     <div
@@ -574,12 +593,14 @@ function ActiveExerciseCard({
             />
             <span className="text-muted-foreground text-sm font-medium">×</span>
             <Input
+              ref={weightInputRef}
               type="text"
               inputMode="decimal"
               pattern="[0-9]*\.?[0-9]*"
               placeholder="kg"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
+              onFocus={() => weightInputRef.current?.select()}
               className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
               style={{ fontSize: "20px" }}
             />
