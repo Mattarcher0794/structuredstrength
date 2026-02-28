@@ -173,6 +173,7 @@ export default function ActiveWorkout() {
                 onLogSet={(setNumber, reps, weight) =>
                   logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
                 }
+                sessionId={sessionId!}
                 onSwap={() => {
                   setSwapExerciseId(pde.exercise_id);
                   setSwapMuscleGroup(pde.exercises?.muscle_group || "");
