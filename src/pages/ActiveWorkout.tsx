@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ExerciseSwapSheet from "@/components/ExerciseSwapSheet";
 
@@ -173,6 +173,7 @@ export default function ActiveWorkout() {
                 onLogSet={(setNumber, reps, weight) =>
                   logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
                 }
+                sessionId={sessionId!}
                 onSwap={() => {
                   setSwapExerciseId(pde.exercise_id);
                   setSwapMuscleGroup(pde.exercises?.muscle_group || "");
@@ -240,18 +241,138 @@ export default function ActiveWorkout() {
   );
 }
 
+/* ── Editable Set Pill ── */
+function EditableSetPill({
+  set,
+  isEditing,
+  onStartEdit,
+  onCancelEdit,
+  sessionId,
+}: {
+  set: any;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  sessionId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [editReps, setEditReps] = useState(String(set.reps ?? ""));
+  const [editWeight, setEditWeight] = useState(String(set.weight ?? ""));
+  const [repsInvalid, setRepsInvalid] = useState(false);
+  const [weightInvalid, setWeightInvalid] = useState(false);
+  const [error, setError] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Reset local state when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setEditReps(String(set.reps ?? ""));
+      setEditWeight(String(set.weight ?? ""));
+      setRepsInvalid(false);
+      setWeightInvalid(false);
+      setError(false);
+    }
+  }, [isEditing, set.reps, set.weight]);
+
+  // Click-outside handler
+  useEffect(() => {
+    if (!isEditing) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onCancelEdit();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isEditing, onCancelEdit]);
+
+  const updateSet = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("session_sets")
+        .update({ reps: parseInt(editReps), weight: parseFloat(editWeight) })
+        .eq("id", set.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
+      onCancelEdit();
+    },
+    onError: () => setError(true),
+  });
+
+  const handleConfirm = () => {
+    const repsValid = editReps.trim() !== "" && /^\d+$/.test(editReps.trim()) && parseInt(editReps) > 0;
+    const weightValid = editWeight.trim() !== "" && /^\d*\.?\d+$/.test(editWeight.trim());
+    setRepsInvalid(!repsValid);
+    setWeightInvalid(!weightValid);
+    if (repsValid && weightValid) {
+      updateSet.mutate();
+    }
+  };
+
+  if (!isEditing) {
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
+        className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 active:bg-secondary/60"
+      >
+        {set.weight}kg × {set.reps}
+      </button>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={editReps}
+        onChange={(e) => { setEditReps(e.target.value); setRepsInvalid(false); }}
+        className={cn(
+          "h-7 w-12 rounded-lg bg-secondary text-center text-xs font-medium text-secondary-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-ring",
+          repsInvalid && "ring-2 ring-destructive"
+        )}
+        placeholder="reps"
+        autoFocus
+      />
+      <span className="text-xs text-muted-foreground">×</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={editWeight}
+        onChange={(e) => { setEditWeight(e.target.value); setWeightInvalid(false); }}
+        className={cn(
+          "h-7 w-14 rounded-lg bg-secondary text-center text-xs font-medium text-secondary-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-ring",
+          weightInvalid && "ring-2 ring-destructive"
+        )}
+        placeholder="kg"
+      />
+      <button
+        onClick={handleConfirm}
+        disabled={updateSet.isPending}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary transition-colors hover:bg-primary/25 active:bg-primary/30"
+      >
+        <Check className="h-4 w-4" />
+      </button>
+      {error && <span className="text-[10px] text-destructive">Couldn't save</span>}
+    </div>
+  );
+}
+
 /* ── Active Exercise Card ── */
 function ActiveExerciseCard({
   exerciseId, exerciseName, numSets, minReps, maxReps,
-  completedSets, onLogSet, onSwap, isSwapped,
+  completedSets, onLogSet, onSwap, isSwapped, sessionId,
 }: {
   exerciseId: string; exerciseName: string; numSets: number;
   minReps: number; maxReps: number; completedSets: any[];
   onLogSet: (setNumber: number, reps: string, weight: string) => void;
-  onSwap: () => void; isSwapped: boolean;
+  onSwap: () => void; isSwapped: boolean; sessionId: string;
 }) {
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
 
@@ -288,12 +409,14 @@ function ActiveExerciseCard({
       {completedSets.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {completedSets.map((s: any) => (
-            <span
+            <EditableSetPill
               key={s.id}
-              className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground"
-            >
-              {s.weight}kg × {s.reps}
-            </span>
+              set={s}
+              isEditing={editingSetId === s.id}
+              onStartEdit={() => setEditingSetId(s.id)}
+              onCancelEdit={() => setEditingSetId(null)}
+              sessionId={sessionId}
+            />
           ))}
         </div>
       )}
