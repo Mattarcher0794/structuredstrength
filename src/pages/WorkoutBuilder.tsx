@@ -75,7 +75,7 @@ export default function WorkoutBuilder() {
     setWorkoutName(day?.workout_name ?? "");
   }, [day?.workout_name]);
 
-  const muscleFilterUnused = null; // removed inline picker
+  
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
@@ -146,51 +146,20 @@ export default function WorkoutBuilder() {
       </div>
 
       {/* Add exercises */}
-      {!showPicker ? (
-        <Button onClick={() => setShowPicker(true)} variant="outline" className="w-full rounded-2xl gap-1 border-dashed">
-          <Plus className="h-4 w-4" /> Add exercise
-        </Button>
-      ) : (
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex gap-1.5 mb-3 overflow-x-auto">
-            {muscleGroups.map((mg) => (
-              <button
-                key={mg}
-                onClick={() => setMuscleFilter(mg)}
-                className={`rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
-                  muscleFilter === mg ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {mg === "all" ? "All" : mg}
-              </button>
-            ))}
-          </div>
-          <Input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search exercises…"
-            className="rounded-xl mb-3 h-9 text-sm"
-          />
-          <div className="max-h-60 overflow-y-auto space-y-1">
-            {filteredExercises.map((ex: any) => (
-              <button
-                key={ex.id}
-                onClick={() => addExercise.mutate(ex.id)}
-                className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
-              >
-                <span className="font-medium">{ex.name}</span>
-                <span className="ml-2 text-xs text-muted-foreground">{ex.sub_muscle} · {ex.equipment}</span>
-              </button>
-            ))}
-            {filteredExercises.length === 0 && (
-              <p className="py-4 text-center text-xs text-muted-foreground">No matching exercises</p>
-            )}
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setShowPicker(false)} className="mt-2 w-full text-xs">
-            Done
-          </Button>
-        </div>
-      )}
+      <Button onClick={() => setShowPicker(true)} variant="outline" className="w-full rounded-2xl gap-1 border-dashed">
+        <Plus className="h-4 w-4" /> Add exercise
+      </Button>
+
+      <ExerciseSearch
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        title="Add to workout"
+        excludeIds={addedExerciseIds}
+        onSelect={(ex) => {
+          addExercise.mutate(ex.id);
+          setShowPicker(false);
+        }}
+      />
     </div>
   );
 }
