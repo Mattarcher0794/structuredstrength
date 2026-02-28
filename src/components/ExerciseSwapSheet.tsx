@@ -66,7 +66,7 @@ export default function ExerciseSwapSheet({ open, onClose, sessionId, originalEx
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh]">
         <SheetHeader>
-          <SheetTitle className="text-left">Swap exercise</SheetTitle>
+          <SheetTitle className="text-left">{title || "Swap exercise"}</SheetTitle>
         </SheetHeader>
         <p className="text-xs text-muted-foreground mb-3">Same muscle group · similar movements shown first</p>
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="rounded-xl mb-3 h-9 text-sm" />
@@ -74,7 +74,7 @@ export default function ExerciseSwapSheet({ open, onClose, sessionId, originalEx
           {sorted.map((ex: any) => (
             <button
               key={ex.id}
-              onClick={() => swapMutation.mutate(ex.id)}
+              onClick={() => isAddMode ? onSelect!({ id: ex.id, name: ex.name, muscle_group: ex.muscle_group, movement_pattern: ex.movement_pattern, equipment: ex.equipment, sub_muscle: ex.sub_muscle }) : swapMutation.mutate(ex.id)}
               className="w-full rounded-xl px-3 py-2.5 text-left text-sm hover:bg-muted transition-colors"
             >
               <span className="font-medium">{ex.name}</span>
