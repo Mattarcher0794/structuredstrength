@@ -5,13 +5,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react";
+import ExerciseSearch from "@/components/ExerciseSearch";
 
 export default function WorkoutBuilder() {
   const { phaseId, dayId } = useParams<{ phaseId: string; dayId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [muscleFilter, setMuscleFilter] = useState<string>("all");
-  const [searchTerm, setSearchTerm] = useState("");
   const [showPicker, setShowPicker] = useState(false);
 
   const { data: day } = useQuery({
