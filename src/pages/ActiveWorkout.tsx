@@ -6,7 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ExerciseSearch from "@/components/ExerciseSearch";
 
@@ -200,6 +201,7 @@ export default function ActiveWorkout() {
                   logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
                 }
                 sessionId={sessionId!}
+                sessionPBs={sessionPBs}
                 onSwap={() => {
                   setSwapExerciseId(pde.exercise_id);
                   setSwapMuscleGroup(pde.exercises?.muscle_group || "");
@@ -237,6 +239,7 @@ export default function ActiveWorkout() {
                   logSet.mutate({ exerciseId: adHoc.exerciseId, exerciseName: adHoc.exerciseName, setNumber, reps, weight, exerciseRestSeconds: null })
                 }
                 sessionId={sessionId!}
+                sessionPBs={sessionPBs}
                 onSwap={() => {}}
                 isSwapped={false}
               />
@@ -344,12 +347,14 @@ function EditableSetPill({
   onStartEdit,
   onCancelEdit,
   sessionId,
+  isPB,
 }: {
   set: any;
   isEditing: boolean;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   sessionId: string;
+  isPB: boolean;
 }) {
   const queryClient = useQueryClient();
   const [editReps, setEditReps] = useState(String(set.reps ?? ""));
@@ -408,14 +413,36 @@ function EditableSetPill({
   };
 
   if (!isEditing) {
-    return (
+    const pill = (
       <button
         onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
-        className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 active:bg-secondary/60"
+        className={cn(
+          "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+          isPB
+            ? "bg-[#FFFBEB] dark:bg-[#3D3400] text-secondary-foreground"
+            : "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/60"
+        )}
       >
-        {set.reps} × {set.weight}kg
+        <span className="inline-flex items-center gap-1">
+          {isPB && <Trophy className="h-3 w-3" style={{ color: "#B8860B" }} />}
+          {set.reps} × {set.weight}kg
+        </span>
       </button>
     );
+
+    if (isPB) {
+      return (
+        <motion.div
+          initial={{ scale: 1 }}
+          animate={{ scale: [1, 1.08, 1] }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        >
+          {pill}
+        </motion.div>
+      );
+    }
+
+    return pill;
   }
 
   return (
@@ -459,12 +486,13 @@ function EditableSetPill({
 /* ── Active Exercise Card ── */
 function ActiveExerciseCard({
   exerciseId, exerciseName, numSets, minReps, maxReps,
-  completedSets, onLogSet, onSwap, isSwapped, sessionId,
+  completedSets, onLogSet, onSwap, isSwapped, sessionId, sessionPBs,
 }: {
   exerciseId: string; exerciseName: string; numSets: number;
   minReps: number; maxReps: number; completedSets: any[];
   onLogSet: (setNumber: number, reps: string, weight: string) => void;
   onSwap: () => void; isSwapped: boolean; sessionId: string;
+  sessionPBs: Array<{ exerciseId: string; exerciseName: string; weight: number }>;
 }) {
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
@@ -504,16 +532,20 @@ function ActiveExerciseCard({
       {/* Completed sets as pills */}
       {completedSets.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {completedSets.map((s: any) => (
-            <EditableSetPill
-              key={s.id}
-              set={s}
-              isEditing={editingSetId === s.id}
-              onStartEdit={() => setEditingSetId(s.id)}
-              onCancelEdit={() => setEditingSetId(null)}
-              sessionId={sessionId}
-            />
-          ))}
+          {completedSets.map((s: any) => {
+            const isPB = sessionPBs.some(pb => pb.exerciseId === exerciseId && pb.weight === s.weight);
+            return (
+              <EditableSetPill
+                key={s.id}
+                set={s}
+                isEditing={editingSetId === s.id}
+                onStartEdit={() => setEditingSetId(s.id)}
+                onCancelEdit={() => setEditingSetId(null)}
+                sessionId={sessionId}
+                isPB={isPB}
+              />
+            );
+          })}
         </div>
       )}
 
