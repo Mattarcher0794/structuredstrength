@@ -33,20 +33,7 @@ export default function WorkoutBuilder() {
     },
   });
 
-  const { data: allExercises = [] } = useQuery({
-    queryKey: ["exercises"],
-    queryFn: async () => {
-      const { data } = await supabase.from("exercises").select("*").order("muscle_group").order("sub_muscle").order("name");
-      return data ?? [];
-    },
-  });
-
-  const filteredExercises = allExercises.filter((ex: any) => {
-    const matchesMuscle = muscleFilter === "all" || ex.muscle_group === muscleFilter;
-    const matchesSearch = !searchTerm || [ex.name, ex.sub_muscle, ex.equipment, ex.movement_pattern].some(field => field?.toLowerCase().includes(searchTerm.toLowerCase()));
-    const notAdded = !dayExercises.some((de: any) => de.exercise_id === ex.id);
-    return matchesMuscle && matchesSearch && notAdded;
-  });
+  const addedExerciseIds = dayExercises.map((de: any) => de.exercise_id);
 
   const addExercise = useMutation({
     mutationFn: async (exerciseId: string) => {
