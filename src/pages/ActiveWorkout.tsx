@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { getPreviousBest, isPersonalBest } from "@/lib/pbDetection";
+import { getPreviousBest } from "@/lib/pbDetection";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,12 +55,11 @@ export default function ActiveWorkout() {
     numSets: number; minReps: number; maxReps: number;
   }>>([]);
 
-  // PB tracking
-  const [sessionPBs, setSessionPBs] = useState<Array<{
-    exerciseId: string;
+  // PB tracking — maps exerciseId to best weight achieved this session
+  const [sessionBests, setSessionBests] = useState<Record<string, {
     exerciseName: string;
     weight: number;
-  }>>([]);
+  }>>({});
 
   const { data: session } = useQuery({
     queryKey: ["workout-session", sessionId],
@@ -110,11 +109,14 @@ export default function ActiveWorkout() {
       // PB detection
       if (data.weight > 0) {
         const previousBest = await getPreviousBest(data.exerciseId, sessionId!);
-        if (isPersonalBest(data.weight, previousBest)) {
-          setSessionPBs(prev => {
-            if (prev.some(pb => pb.exerciseId === data.exerciseId)) return prev;
-            return [...prev, { exerciseId: data.exerciseId, exerciseName: data.exerciseName, weight: data.weight }];
-          });
+        if (previousBest === null) return; // no history — not a PB
+        const currentSessionBest = sessionBests[data.exerciseId]?.weight ?? null;
+        const effectiveBest = Math.max(previousBest ?? 0, currentSessionBest ?? 0);
+        if (data.weight > effectiveBest) {
+          setSessionBests(prev => ({
+            ...prev,
+            [data.exerciseId]: { exerciseName: data.exerciseName, weight: data.weight },
+          }));
         }
       }
     },
@@ -131,7 +133,7 @@ export default function ActiveWorkout() {
         state: {
           sessionId,
           workoutName: session?.phase_days?.workout_name || "Workout",
-          sessionPBs,
+          sessionPBs: Object.entries(sessionBests).map(([exerciseId, { exerciseName, weight }]) => ({ exerciseId, exerciseName, weight })),
           startedAt: session?.started_at,
         },
       });
@@ -209,7 +211,7 @@ export default function ActiveWorkout() {
                   logSet.mutate({ exerciseId: eff.id, exerciseName: eff.name, setNumber, reps, weight, exerciseRestSeconds: pde.rest_seconds })
                 }
                 sessionId={sessionId!}
-                sessionPBs={sessionPBs}
+                sessionPBs={sessionBests}
                 onSwap={() => {
                   setSwapExerciseId(pde.exercise_id);
                   setSwapMuscleGroup(pde.exercises?.muscle_group || "");
@@ -247,7 +249,7 @@ export default function ActiveWorkout() {
                   logSet.mutate({ exerciseId: adHoc.exerciseId, exerciseName: adHoc.exerciseName, setNumber, reps, weight, exerciseRestSeconds: null })
                 }
                 sessionId={sessionId!}
-                sessionPBs={sessionPBs}
+                sessionPBs={sessionBests}
                 onSwap={() => {}}
                 isSwapped={false}
               />
@@ -500,7 +502,7 @@ function ActiveExerciseCard({
   minReps: number; maxReps: number; completedSets: any[];
   onLogSet: (setNumber: number, reps: string, weight: string) => void;
   onSwap: () => void; isSwapped: boolean; sessionId: string;
-  sessionPBs: Array<{ exerciseId: string; exerciseName: string; weight: number }>;
+  sessionPBs: Record<string, { exerciseName: string; weight: number }>;
 }) {
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
@@ -560,7 +562,8 @@ function ActiveExerciseCard({
       {completedSets.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {completedSets.map((s: any) => {
-            const isPB = sessionPBs.some(pb => pb.exerciseId === exerciseId && pb.weight === s.weight);
+            const pbEntry = sessionPBs[exerciseId];
+            const isPB = !!pbEntry && s.weight === pbEntry.weight;
             return (
               <EditableSetPill
                 key={s.id}
