@@ -44,7 +44,7 @@ export default function WorkoutBuilder() {
 
   const filteredExercises = allExercises.filter((ex: any) => {
     const matchesMuscle = muscleFilter === "all" || ex.muscle_group === muscleFilter;
-    const matchesSearch = !searchTerm || ex.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || [ex.name, ex.sub_muscle, ex.equipment, ex.movement_pattern].some(field => field?.toLowerCase().includes(searchTerm.toLowerCase()));
     const notAdded = !dayExercises.some((de: any) => de.exercise_id === ex.id);
     return matchesMuscle && matchesSearch && notAdded;
   });
