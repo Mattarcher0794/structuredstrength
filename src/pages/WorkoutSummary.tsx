@@ -108,7 +108,7 @@ export default function WorkoutSummary() {
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center justify-center gap-8 mb-8">
+        <div className="flex items-center justify-center w-full mb-8">
           <StatItem value={`${durationMins}`} label="mins" />
           <StatItem value={`${stats?.totalSets ?? 0}`} label="sets" />
           <StatItem value={`${stats?.exercises ?? 0}`} label="exercises" />
@@ -158,7 +158,7 @@ export default function WorkoutSummary() {
 
 function StatItem({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-center">
+    <div className="flex-1 flex flex-col items-center text-center">
       <p className="text-2xl font-bold">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
