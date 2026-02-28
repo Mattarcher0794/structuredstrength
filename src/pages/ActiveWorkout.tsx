@@ -95,9 +95,9 @@ export default function ActiveWorkout() {
         reps: parseInt(reps),
         weight: parseFloat(weight) || 0,
       });
-      return { exerciseRestSeconds };
+      return { exerciseRestSeconds, exerciseId, exerciseName, weight: parseFloat(weight) || 0 };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
       const duration = variables.exerciseRestSeconds ?? defaultRest;
       restStartRef.current = Date.now();
@@ -105,6 +105,17 @@ export default function ActiveWorkout() {
       setRestTarget(duration);
       setRestTime(duration);
       setRestRunning(true);
+
+      // PB detection
+      if (data.weight > 0) {
+        const previousBest = await getPreviousBest(data.exerciseId, sessionId!);
+        if (isPersonalBest(data.weight, previousBest)) {
+          setSessionPBs(prev => {
+            if (prev.some(pb => pb.exerciseId === data.exerciseId)) return prev;
+            return [...prev, { exerciseId: data.exerciseId, exerciseName: data.exerciseName, weight: data.weight }];
+          });
+        }
+      }
     },
   });
 
