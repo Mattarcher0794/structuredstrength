@@ -16,7 +16,7 @@ interface Props {
   onSelect?: (exercise: { id: string; name: string; muscle_group: string; movement_pattern: string; equipment: string; sub_muscle: string }) => void;
 }
 
-export default function ExerciseSwapSheet({ open, onClose, sessionId, originalExerciseId, muscleGroup, movementPattern }: Props) {
+export default function ExerciseSwapSheet({ open, onClose, sessionId, originalExerciseId, muscleGroup, movementPattern, title, onSelect }: Props) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
