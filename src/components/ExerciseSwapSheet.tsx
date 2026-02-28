@@ -46,7 +46,7 @@ export default function ExerciseSwapSheet({ open, onClose, sessionId, originalEx
     const aMatch = a.movement_pattern === movementPattern ? 0 : 1;
     const bMatch = b.movement_pattern === movementPattern ? 0 : 1;
     return aMatch - bMatch || a.name.localeCompare(b.name);
-  }).filter((ex: any) => !search || ex.name.toLowerCase().includes(search.toLowerCase()));
+  }).filter((ex: any) => !search || [ex.name, ex.sub_muscle, ex.equipment, ex.movement_pattern].some(field => field?.toLowerCase().includes(search.toLowerCase())));
 
   const swapMutation = useMutation({
     mutationFn: async (replacementId: string) => {
