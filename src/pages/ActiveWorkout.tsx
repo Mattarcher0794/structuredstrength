@@ -46,6 +46,13 @@ export default function ActiveWorkout() {
   const [swapMuscleGroup, setSwapMuscleGroup] = useState("");
   const [swapMovementPattern, setSwapMovementPattern] = useState("");
 
+  // Add exercise
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [adHocExercises, setAdHocExercises] = useState<Array<{
+    id: string; exerciseId: string; exerciseName: string;
+    numSets: number; minReps: number; maxReps: number;
+  }>>([]);
+
   const { data: session } = useQuery({
     queryKey: ["workout-session", sessionId],
     queryFn: async () => {
