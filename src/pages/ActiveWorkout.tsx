@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { getPreviousBest, isPersonalBest } from "@/lib/pbDetection";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +54,13 @@ export default function ActiveWorkout() {
     numSets: number; minReps: number; maxReps: number;
   }>>([]);
 
+  // PB tracking
+  const [sessionPBs, setSessionPBs] = useState<Array<{
+    exerciseId: string;
+    exerciseName: string;
+    weight: number;
+  }>>([]);
+
   const { data: session } = useQuery({
     queryKey: ["workout-session", sessionId],
     queryFn: async () => {
@@ -87,9 +95,9 @@ export default function ActiveWorkout() {
         reps: parseInt(reps),
         weight: parseFloat(weight) || 0,
       });
-      return { exerciseRestSeconds };
+      return { exerciseRestSeconds, exerciseId, exerciseName, weight: parseFloat(weight) || 0 };
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
       const duration = variables.exerciseRestSeconds ?? defaultRest;
       restStartRef.current = Date.now();
@@ -97,6 +105,17 @@ export default function ActiveWorkout() {
       setRestTarget(duration);
       setRestTime(duration);
       setRestRunning(true);
+
+      // PB detection
+      if (data.weight > 0) {
+        const previousBest = await getPreviousBest(data.exerciseId, sessionId!);
+        if (isPersonalBest(data.weight, previousBest)) {
+          setSessionPBs(prev => {
+            if (prev.some(pb => pb.exerciseId === data.exerciseId)) return prev;
+            return [...prev, { exerciseId: data.exerciseId, exerciseName: data.exerciseName, weight: data.weight }];
+          });
+        }
+      }
     },
   });
 
