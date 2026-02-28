@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ExerciseSwapSheet from "@/components/ExerciseSwapSheet";
 
@@ -45,6 +45,13 @@ export default function ActiveWorkout() {
   const [swapExerciseId, setSwapExerciseId] = useState<string | null>(null);
   const [swapMuscleGroup, setSwapMuscleGroup] = useState("");
   const [swapMovementPattern, setSwapMovementPattern] = useState("");
+
+  // Add exercise
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [adHocExercises, setAdHocExercises] = useState<Array<{
+    id: string; exerciseId: string; exerciseName: string;
+    numSets: number; minReps: number; maxReps: number;
+  }>>([]);
 
   const { data: session } = useQuery({
     queryKey: ["workout-session", sessionId],
@@ -191,6 +198,48 @@ export default function ActiveWorkout() {
               />
             );
           })}
+
+          {/* Ad-hoc exercises */}
+          {adHocExercises.map((adHoc, i) => {
+            const globalIndex = exercises.length + i;
+            const completedSets = sessionSets.filter((s: any) => s.exercise_id === adHoc.exerciseId);
+            const isActive = activeIndex === globalIndex;
+
+            return isActive ? (
+              <ActiveExerciseCard
+                key={adHoc.id}
+                exerciseId={adHoc.exerciseId}
+                exerciseName={adHoc.exerciseName}
+                numSets={adHoc.numSets}
+                minReps={adHoc.minReps}
+                maxReps={adHoc.maxReps}
+                completedSets={completedSets}
+                onLogSet={(setNumber, reps, weight) =>
+                  logSet.mutate({ exerciseId: adHoc.exerciseId, exerciseName: adHoc.exerciseName, setNumber, reps, weight, exerciseRestSeconds: null })
+                }
+                sessionId={sessionId!}
+                onSwap={() => {}}
+                isSwapped={false}
+              />
+            ) : (
+              <InactiveExerciseCard
+                key={adHoc.id}
+                exerciseName={adHoc.exerciseName}
+                numSets={adHoc.numSets}
+                completedCount={completedSets.length}
+                onClick={() => setActiveIndex(globalIndex)}
+              />
+            );
+          })}
+
+          {/* Add exercise CTA */}
+          <button
+            onClick={() => setAddSheetOpen(true)}
+            className="w-full flex items-center justify-center gap-2 min-h-[44px] py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add exercise
+          </button>
         </div>
       </div>
 
@@ -236,6 +285,30 @@ export default function ActiveWorkout() {
         originalExerciseId={swapExerciseId || ""}
         muscleGroup={swapMuscleGroup}
         movementPattern={swapMovementPattern}
+      />
+
+      {/* Add Exercise Sheet */}
+      <ExerciseSwapSheet
+        open={addSheetOpen}
+        onClose={() => setAddSheetOpen(false)}
+        sessionId={sessionId!}
+        originalExerciseId=""
+        muscleGroup=""
+        movementPattern=""
+        title="Add exercise"
+        onSelect={(ex) => {
+          const newIndex = exercises.length + adHocExercises.length;
+          setAdHocExercises(prev => [...prev, {
+            id: `adhoc-${Date.now()}`,
+            exerciseId: ex.id,
+            exerciseName: ex.name,
+            numSets: 3,
+            minReps: 8,
+            maxReps: 12,
+          }]);
+          setActiveIndex(newIndex);
+          setAddSheetOpen(false);
+        }}
       />
     </div>
   );
