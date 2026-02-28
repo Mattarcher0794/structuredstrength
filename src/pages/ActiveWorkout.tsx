@@ -126,7 +126,15 @@ export default function ActiveWorkout() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["active-session"] });
-      navigate("/");
+      navigate(`/workout/${sessionId}/summary`, {
+        replace: true,
+        state: {
+          sessionId,
+          workoutName: session?.phase_days?.workout_name || "Workout",
+          sessionPBs,
+          startedAt: session?.started_at,
+        },
+      });
     },
   });
 

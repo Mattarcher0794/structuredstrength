@@ -12,6 +12,7 @@ import PhaseCreate from "@/pages/PhaseCreate";
 import PhaseDetail from "@/pages/PhaseDetail";
 import WorkoutBuilder from "@/pages/WorkoutBuilder";
 import ActiveWorkout from "@/pages/ActiveWorkout";
+import WorkoutSummary from "@/pages/WorkoutSummary";
 import History from "@/pages/History";
 import WorkoutDetail from "@/pages/WorkoutDetail";
 import Profile from "@/pages/Profile";
@@ -49,6 +50,7 @@ function ProtectedRoutes() {
         <Route path="profile/developer/exercise-api" element={<ExerciseApiSearch />} />
       </Route>
       <Route path="workout/:sessionId" element={<ActiveWorkout />} />
+      <Route path="workout/:sessionId/summary" element={<WorkoutSummary />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
