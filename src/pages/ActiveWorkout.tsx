@@ -286,6 +286,30 @@ export default function ActiveWorkout() {
         muscleGroup={swapMuscleGroup}
         movementPattern={swapMovementPattern}
       />
+
+      {/* Add Exercise Sheet */}
+      <ExerciseSwapSheet
+        open={addSheetOpen}
+        onClose={() => setAddSheetOpen(false)}
+        sessionId={sessionId!}
+        originalExerciseId=""
+        muscleGroup=""
+        movementPattern=""
+        title="Add exercise"
+        onSelect={(ex) => {
+          const newIndex = exercises.length + adHocExercises.length;
+          setAdHocExercises(prev => [...prev, {
+            id: `adhoc-${Date.now()}`,
+            exerciseId: ex.id,
+            exerciseName: ex.name,
+            numSets: 3,
+            minReps: 8,
+            maxReps: 12,
+          }]);
+          setActiveIndex(newIndex);
+          setAddSheetOpen(false);
+        }}
+      />
     </div>
   );
 }
