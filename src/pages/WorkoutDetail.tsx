@@ -1,8 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Trophy } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
+import { detectSetPBs } from "@/lib/historyPBDetection";
+
+function StatItem({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex-1 flex flex-col items-center text-center">
+      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
 
 export default function WorkoutDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -32,11 +42,25 @@ export default function WorkoutDetail() {
     },
   });
 
+  const { data: pbSetIds } = useQuery({
+    queryKey: ["workout-detail-pbs", sessionId, sets.length],
+    queryFn: () =>
+      detectSetPBs(
+        sessionId!,
+        session!.started_at,
+        sets.map((s: any) => ({ id: s.id, exercise_id: s.exercise_id, weight: s.weight }))
+      ),
+    enabled: !!session && sets.length > 0,
+  });
+
   if (!session) return null;
 
   const duration = session.completed_at && session.started_at
     ? differenceInMinutes(new Date(session.completed_at), new Date(session.started_at))
     : null;
+
+  const uniqueExercises = new Set(sets.map((s: any) => s.exercise_id)).size;
+  const hasPBs = pbSetIds && pbSetIds.size > 0;
 
   // Group sets by exercise
   const exerciseMap = new Map<string, { name: string; sets: any[] }>();
@@ -54,29 +78,52 @@ export default function WorkoutDetail() {
       </button>
 
       <h1 className="text-xl font-semibold">{session.phase_days?.workout_name || "Workout"}</h1>
-      <p className="text-sm text-muted-foreground mb-2">
+      <p className="text-sm text-muted-foreground mb-4">
         {format(new Date(session.date), "EEEE, MMMM d, yyyy")}
-        {duration !== null && ` · ${duration} min`}
       </p>
 
       {(session as any).is_schedule_override && (
-        <p className="text-xs text-muted-foreground italic mb-6">
+        <p className="text-xs text-muted-foreground italic mb-4">
           Scheduled as {(session as any).scheduled_day_type === "rest" ? "Rest Day" : "Cardio Day"} — trained anyway
         </p>
       )}
-      {!(session as any).is_schedule_override && <div className="mb-6" />}
+
+      {/* Stats row */}
+      <div className="flex items-center rounded-2xl bg-card border border-border p-4 mb-3">
+        <StatItem value={duration !== null ? String(duration) : "—"} label="mins" />
+        <div className="w-px h-8 bg-border" />
+        <StatItem value={String(sets.length)} label="sets" />
+        <div className="w-px h-8 bg-border" />
+        <StatItem value={String(uniqueExercises)} label="exercises" />
+      </div>
+
+      {/* PB callout */}
+      {hasPBs && (
+        <div className="flex items-center gap-2 mb-6 px-1">
+          <Trophy className="h-3.5 w-3.5" style={{ color: "#B8860B" }} />
+          <span className="text-xs" style={{ color: "#B8860B" }}>Personal bests in this session</span>
+        </div>
+      )}
+      {!hasPBs && <div className="mb-6" />}
 
       <div className="space-y-4">
         {Array.from(exerciseMap.entries()).map(([exId, { name, sets: exSets }]) => (
           <div key={exId} className="rounded-2xl bg-card border border-border p-4">
             <h3 className="text-sm font-medium mb-2">{name}</h3>
             <div className="space-y-1">
-              {exSets.map((s: any) => (
-                <div key={s.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                  <span>Set {s.set_number}: {s.weight}kg × {s.reps}</span>
-                </div>
-              ))}
+              {exSets.map((s: any) => {
+                const isPB = pbSetIds?.has(s.id) ?? false;
+                return (
+                  <div key={s.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {isPB ? (
+                      <Trophy className="h-3 w-3" style={{ color: "#B8860B" }} />
+                    ) : (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    <span>Set {s.set_number}: {s.reps} × {s.weight}kg</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
