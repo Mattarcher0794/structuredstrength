@@ -98,7 +98,8 @@ export default function WorkoutSummary() {
       transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1.0] }}
       className="fixed inset-0 z-50 bg-background flex flex-col"
     >
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
+      {/* Content area — vertically centred above the pinned button */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full pb-[96px]">
         {/* Header */}
         <div className="text-center mb-8">
           <Trophy className="h-8 w-8 mx-auto mb-3" style={{ color: "#B8860B" }} />
@@ -116,7 +117,7 @@ export default function WorkoutSummary() {
         {/* PB callout */}
         {sessionPBs.length > 0 && (
           <div
-            className="w-full rounded-2xl border p-4 mb-8"
+            className="w-full rounded-2xl border p-4"
             style={{
               backgroundColor: "#FFFBEB",
               borderColor: "rgba(184, 134, 11, 0.3)",
@@ -138,14 +139,18 @@ export default function WorkoutSummary() {
             </div>
           </div>
         )}
+      </div>
 
-        {/* CTA */}
-        <Button
-          onClick={() => navigate("/", { replace: true })}
-          className="w-full h-12 rounded-xl text-base font-semibold"
-        >
-          Done
-        </Button>
+      {/* Pinned Done button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background p-6 z-50">
+        <div className="max-w-lg mx-auto">
+          <Button
+            onClick={() => navigate("/", { replace: true })}
+            className="w-full h-12 rounded-xl text-base font-semibold"
+          >
+            Done
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
