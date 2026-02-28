@@ -532,16 +532,20 @@ function ActiveExerciseCard({
       {/* Completed sets as pills */}
       {completedSets.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {completedSets.map((s: any) => (
-            <EditableSetPill
-              key={s.id}
-              set={s}
-              isEditing={editingSetId === s.id}
-              onStartEdit={() => setEditingSetId(s.id)}
-              onCancelEdit={() => setEditingSetId(null)}
-              sessionId={sessionId}
-            />
-          ))}
+          {completedSets.map((s: any) => {
+            const isPB = sessionPBs.some(pb => pb.exerciseId === exerciseId && pb.weight === s.weight);
+            return (
+              <EditableSetPill
+                key={s.id}
+                set={s}
+                isEditing={editingSetId === s.id}
+                onStartEdit={() => setEditingSetId(s.id)}
+                onCancelEdit={() => setEditingSetId(null)}
+                sessionId={sessionId}
+                isPB={isPB}
+              />
+            );
+          })}
         </div>
       )}
 
