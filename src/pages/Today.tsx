@@ -564,6 +564,7 @@ export default function Today() {
       {activePhase && effectiveWeekSchedule.length > 0 && (
         <WeekStrip
           schedule={effectiveWeekSchedule}
+          allPhaseDays={allPhaseDays}
           completedDates={weeklyCompletedDates}
           onDayTap={(day) => setPeekDay(day)}
         />
@@ -738,20 +739,24 @@ export default function Today() {
                 </div>
               }
 
-              <MoveWorkoutSheet
-                open={moveSheetOpen}
-                onOpenChange={setMoveSheetOpen}
-                activePhaseId={activePhase!.id}
-                userId={user!.id}
-                todayWorkoutName={todayDay?.workout_name || "Strength"}
-                effectiveWeekSchedule={effectiveWeekSchedule}
-                completedDates={weeklyCompletedDates}
-                sourceDayOfWeek={moveSourceDow}
-              />
             </>
           )}
         </div>
       }
+
+      {/* Move workout sheet — global so it works from any entry point */}
+      {activePhase && user && (
+        <MoveWorkoutSheet
+          open={moveSheetOpen}
+          onOpenChange={setMoveSheetOpen}
+          activePhaseId={activePhase.id}
+          userId={user.id}
+          todayWorkoutName={todayDay?.workout_name || "Strength"}
+          effectiveWeekSchedule={effectiveWeekSchedule}
+          completedDates={weeklyCompletedDates}
+          sourceDayOfWeek={moveSourceDow}
+        />
+      )}
     </div>);
 
 }
