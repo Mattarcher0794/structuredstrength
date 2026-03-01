@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { ArrowLeftRight, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,13 @@ function resolveOriginalDow(
   const inbound = overrides.find(o => o.overridden_day_of_week === effectiveDow);
   if (inbound) return inbound.original_day_of_week;
   return effectiveDow;
+}
+
+/** Returns "today" if the date is today, otherwise the day name (e.g. "Monday") */
+function getDayDisplayName(date?: Date, capitalize?: boolean): string {
+  if (!date) return capitalize ? "Today" : "today";
+  if (isToday(date)) return capitalize ? "Today" : "today";
+  return format(date, "EEEE");
 }
 
 interface Props {
