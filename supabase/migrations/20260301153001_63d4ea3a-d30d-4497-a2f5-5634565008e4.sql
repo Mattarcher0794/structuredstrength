@@ -1,0 +1,1 @@
+DELETE FROM phase_day_overrides WHERE user_id = '127d95eb-4e2a-4217-a693-79970e91fdbb';

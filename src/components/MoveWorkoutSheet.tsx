@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { ArrowLeftRight, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,13 @@ function resolveOriginalDow(
   const inbound = overrides.find(o => o.overridden_day_of_week === effectiveDow);
   if (inbound) return inbound.original_day_of_week;
   return effectiveDow;
+}
+
+/** Returns "today" if the date is today, otherwise the day name (e.g. "Monday") */
+function getDayDisplayName(date?: Date, capitalize?: boolean): string {
+  if (!date) return capitalize ? "Today" : "today";
+  if (isToday(date)) return capitalize ? "Today" : "today";
+  return format(date, "EEEE");
 }
 
 interface Props {
@@ -114,16 +121,14 @@ export function MoveWorkoutSheet({
           }
         );
       } else {
-        // Scenario B/C — Strength → Rest: one row only
-        const strengthDow = sourceIsStrength ? sourceDow : targetDow;
-        const restDow = sourceIsStrength ? targetDow : sourceDow;
-        const trueStrengthDow = resolveOriginalDow(strengthDow, currentWeekOverrides);
+        // Scenario B — Strength → Rest: one row only
+        const trueStrengthDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
         rows.push({
           phase_id: activePhaseId,
           user_id: userId,
           week_start_date: weekStart,
           original_day_of_week: trueStrengthDow,
-          overridden_day_of_week: restDow,
+          overridden_day_of_week: targetDow,
         });
       }
 
@@ -182,7 +187,7 @@ export function MoveWorkoutSheet({
         <DrawerHeader className="text-left">
           <DrawerTitle>Move workout to…</DrawerTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Pick a day to move {sourceDayOfWeek ? `${["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][sourceDow]}'s` : "today's"} {sourceWorkoutName || "workout"} to this week
+            Pick a day to move {getDayDisplayName(sourceDay?.date)}'s {sourceWorkoutName || "workout"} to this week
           </p>
         </DrawerHeader>
 
@@ -196,8 +201,8 @@ export function MoveWorkoutSheet({
                 </p>
                 <p className="text-muted-foreground text-xs">
                   {confirmTarget.dayType === "strength"
-                    ? `${confirmTarget.workoutName || "Strength"} will move to today instead.`
-                    : "Today will become a rest day."}
+                    ? `${confirmTarget.workoutName || "Strength"} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
+                    : `${getDayDisplayName(sourceDay?.date, true)} will become a rest day.`}
                 </p>
               </div>
               <div className="flex gap-3">
