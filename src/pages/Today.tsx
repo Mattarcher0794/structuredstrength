@@ -104,11 +104,11 @@ export default function Today() {
   const { data: allPhaseDays } = useQuery({
     queryKey: ["all-phase-days", activePhase?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("phase_days")
-        .select("*, phase_day_exercises(*, exercises(*))")
-        .eq("phase_id", activePhase!.id)
-        .order("day_of_week");
+      const { data } = await supabase.
+      from("phase_days").
+      select("*, phase_day_exercises(*, exercises(*))").
+      eq("phase_id", activePhase!.id).
+      order("day_of_week");
       return data ?? [];
     },
     enabled: !!activePhase
@@ -119,12 +119,12 @@ export default function Today() {
   const { data: currentWeekOverrides = [] } = useQuery({
     queryKey: ["week-overrides", user?.id, activePhase?.id, weekStartDate],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("phase_day_overrides")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("phase_id", activePhase!.id)
-        .eq("week_start_date", weekStartDate);
+      const { data } = await supabase.
+      from("phase_day_overrides").
+      select("*").
+      eq("user_id", user!.id).
+      eq("phase_id", activePhase!.id).
+      eq("week_start_date", weekStartDate);
       return data ?? [];
     },
     enabled: !!user && !!activePhase
@@ -137,22 +137,22 @@ export default function Today() {
 
     return Array.from({ length: 7 }, (_, i) => {
       const dayOfWeek = i + 1;
-      const inbound = currentWeekOverrides.find(o => o.overridden_day_of_week === dayOfWeek);
-      const outbound = currentWeekOverrides.find(o => o.original_day_of_week === dayOfWeek);
+      const inbound = currentWeekOverrides.find((o) => o.overridden_day_of_week === dayOfWeek);
+      const outbound = currentWeekOverrides.find((o) => o.original_day_of_week === dayOfWeek);
 
       let phaseDay: any | null = null;
       let isOverridden = false;
 
       if (inbound) {
         // Another day's workout has been moved TO this day
-        phaseDay = allPhaseDays.find(d => d.day_of_week === inbound.original_day_of_week) ?? null;
+        phaseDay = allPhaseDays.find((d) => d.day_of_week === inbound.original_day_of_week) ?? null;
         isOverridden = true;
       } else if (outbound) {
         // This day's workout has been moved away — treat as rest
         phaseDay = { day_type: "rest", workout_name: null, phase_day_exercises: [] };
         isOverridden = true;
       } else {
-        phaseDay = allPhaseDays.find(d => d.day_of_week === dayOfWeek) ?? null;
+        phaseDay = allPhaseDays.find((d) => d.day_of_week === dayOfWeek) ?? null;
       }
 
       return {
@@ -162,14 +162,14 @@ export default function Today() {
         workoutName: phaseDay?.workout_name ?? null,
         phaseDay,
         isToday: dayOfWeek === todayDow,
-        isOverridden,
+        isOverridden
       };
     });
   }, [allPhaseDays, currentWeekOverrides]);
 
   // Resolve today's effective phase day
-  const todaySchedule = effectiveWeekSchedule.find(d => d.isToday);
-  const todayDay = todaySchedule?.phaseDay ?? (allPhaseDays?.find(d => d.day_of_week === dow) ?? null);
+  const todaySchedule = effectiveWeekSchedule.find((d) => d.isToday);
+  const todayDay = todaySchedule?.phaseDay ?? allPhaseDays?.find((d) => d.day_of_week === dow) ?? null;
 
   const { data: activeSession } = useQuery({
     queryKey: ["active-session", user?.id],
@@ -225,14 +225,14 @@ export default function Today() {
   const { data: completedToday } = useQuery({
     queryKey: ["completed-today", user?.id, activePhase?.id, todayDay?.id, todayStr],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("workout_sessions")
-        .select("id")
-        .eq("user_id", user!.id)
-        .eq("phase_day_id", todayDay!.id)
-        .eq("status", "completed")
-        .eq("date", todayStr)
-        .maybeSingle();
+      const { data } = await supabase.
+      from("workout_sessions").
+      select("id").
+      eq("user_id", user!.id).
+      eq("phase_day_id", todayDay!.id).
+      eq("status", "completed").
+      eq("date", todayStr).
+      maybeSingle();
       return data;
     },
     enabled: !!user && !!activePhase && !!todayDay
@@ -244,16 +244,16 @@ export default function Today() {
   const { data: weeklyCompletedDates = new Set<string>() } = useQuery({
     queryKey: ["weekly-completed-dates", user?.id, activePhase?.id, weekStart],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("workout_sessions")
-        .select("date")
-        .eq("user_id", user!.id)
-        .eq("status", "completed")
-        .gte("date", weekStart)
-        .lte("date", weekEnd);
+      const { data } = await supabase.
+      from("workout_sessions").
+      select("date").
+      eq("user_id", user!.id).
+      eq("status", "completed").
+      gte("date", weekStart).
+      lte("date", weekEnd);
       return new Set((data ?? []).map((d: any) => d.date));
     },
-    enabled: !!user && !!activePhase,
+    enabled: !!user && !!activePhase
   });
 
   const plannedStrengthCount = strengthDays.length;
@@ -262,14 +262,14 @@ export default function Today() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("user_id", user!.id)
-        .maybeSingle();
+      const { data } = await supabase.
+      from("profiles").
+      select("display_name").
+      eq("user_id", user!.id).
+      maybeSingle();
       return data;
     },
-    enabled: !!user,
+    enabled: !!user
   });
 
   const greetingHour = today.getHours();
@@ -320,12 +320,12 @@ export default function Today() {
   const exerciseCount = todayDay?.phase_day_exercises?.length ?? 0;
 
   // Phase week progress
-  const currentWeek = activePhase?.start_date
-    ? Math.min(
-        Math.floor((today.getTime() - new Date(activePhase.start_date + "T00:00:00").getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1,
-        activePhase.length_weeks
-      )
-    : null;
+  const currentWeek = activePhase?.start_date ?
+  Math.min(
+    Math.floor((today.getTime() - new Date(activePhase.start_date + "T00:00:00").getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1,
+    activePhase.length_weeks
+  ) :
+  null;
 
   const WeekProgressBar = () => {
     if (!activePhase?.start_date || currentWeek === null) return null;
@@ -343,34 +343,34 @@ export default function Today() {
                 className="h-1 flex-1 rounded-full"
                 style={{
                   backgroundColor:
-                    week < currentWeek
-                      ? "hsl(var(--primary))"
-                      : week === currentWeek
-                      ? "hsl(var(--primary) / 0.5)"
-                      : "hsl(var(--muted))",
-                }}
-              />
-            );
+                  week < currentWeek ?
+                  "hsl(var(--primary))" :
+                  week === currentWeek ?
+                  "hsl(var(--primary) / 0.5)" :
+                  "hsl(var(--muted))"
+                }} />);
+
+
           })}
         </div>
-      </div>
-    );
+      </div>);
+
   };
 
-  function NoPhaseEmptyState({ userId }: { userId?: string }) {
+  function NoPhaseEmptyState({ userId }: {userId?: string;}) {
     const nav = useNavigate();
     const [agentState, setAgentState] = useState<"idle" | "loading" | "error">("idle");
 
     const { data: phaseCount, isLoading } = useQuery({
       queryKey: ["all-phases-count", userId],
       queryFn: async () => {
-        const { count } = await supabase
-          .from("phases")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId!);
+        const { count } = await supabase.
+        from("phases").
+        select("id", { count: "exact", head: true }).
+        eq("user_id", userId!);
         return count ?? 0;
       },
-      enabled: !!userId,
+      enabled: !!userId
     });
 
     const handleCreateForMe = async () => {
@@ -379,18 +379,18 @@ export default function Today() {
 
       try {
         const { data, error } = await supabase.functions.invoke("suggest-plan", {
-          body: { lengthWeeks: 6, isReturningUser: false, lastTwoPhases: [], recentSessions: [] },
+          body: { lengthWeeks: 6, isReturningUser: false, lastTwoPhases: [], recentSessions: [] }
         });
         if (error) throw error;
         const plan = data?.plan;
         if (!plan?.planName || !Array.isArray(plan.days)) throw new Error("Invalid plan");
 
         // Create phase
-        const { data: phase } = await supabase
-          .from("phases")
-          .insert({ user_id: userId, name: plan.planName, length_weeks: 6, start_date: new Date().toISOString().split("T")[0] })
-          .select()
-          .single();
+        const { data: phase } = await supabase.
+        from("phases").
+        insert({ user_id: userId, name: plan.planName, length_weeks: 6, start_date: new Date().toISOString().split("T")[0] }).
+        select().
+        single();
         if (!phase) throw new Error("Failed to create phase");
 
         // Insert days
@@ -398,7 +398,7 @@ export default function Today() {
           phase_id: phase.id,
           day_of_week: d.dayOfWeek,
           day_type: d.dayType,
-          workout_name: d.workoutName,
+          workout_name: d.workoutName
         }));
         const { data: insertedDays } = await supabase.from("phase_days").insert(dayRows).select();
         if (!insertedDays) throw new Error("Failed to create days");
@@ -419,7 +419,7 @@ export default function Today() {
                 sub_muscle: ex.subMuscle,
                 equipment: ex.equipment,
                 movement_pattern: ex.movementPattern,
-                is_unilateral: ex.isUnilateral,
+                is_unilateral: ex.isUnilateral
               });
             }
             if (!exerciseId) continue;
@@ -429,7 +429,7 @@ export default function Today() {
               order_index: i,
               num_sets: ex.sets,
               min_reps: ex.minReps,
-              max_reps: ex.maxReps,
+              max_reps: ex.maxReps
             });
           }
         }
@@ -452,54 +452,54 @@ export default function Today() {
           <Sparkles className="mx-auto h-8 w-8 text-primary/50 animate-pulse" />
           <h2 className="text-lg font-display font-semibold">Building your first plan...</h2>
           <p className="text-sm text-muted-foreground">This will only take a moment</p>
-        </div>
-      );
+        </div>);
+
     }
 
     return (
       <div className="space-y-2">
         <div className="rounded-2xl bg-card border border-border p-8 text-center space-y-4">
-          {isNew ? (
-            <Sparkles className="mx-auto h-8 w-8 text-primary/50" />
-          ) : (
-            <Dumbbell className="mx-auto h-8 w-8 text-primary/50" />
-          )}
+          {isNew ?
+          <Sparkles className="mx-auto h-8 w-8 text-primary/50" /> :
+
+          <Dumbbell className="mx-auto h-8 w-8 text-primary/50" />
+          }
 
           <div>
             <h2 className="text-lg font-display font-semibold mb-1">
               {isNew ? "Let's build your first plan" : "Ready for your next block?"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {isNew
-                ? "Tell us how you train and we'll create a personalised programme to get you started."
-                : "You've finished your last phase. Start a new one to keep your progress going."}
+              {isNew ?
+              "Tell us how you train and we'll create a personalised programme to get you started." :
+              "You've finished your last phase. Start a new one to keep your progress going."}
             </p>
           </div>
 
           <div className="space-y-2.5 pt-2">
             <Button
               onClick={isNew ? handleCreateForMe : () => nav("/phases/new")}
-              className="w-full rounded-2xl py-5"
-            >
+              className="w-full rounded-2xl py-5">
+
               {isNew ? "Create a plan for me" : "Suggest my next plan"}
             </Button>
             <Button
               variant="outline"
               onClick={() => nav("/phases/new")}
-              className="w-full rounded-2xl py-5"
-            >
+              className="w-full rounded-2xl py-5">
+
               {isNew ? "I'll build it myself" : "Build it myself"}
             </Button>
           </div>
         </div>
 
-        {agentState === "error" && (
-          <p className="text-sm text-muted-foreground text-center">
+        {agentState === "error" &&
+        <p className="text-sm text-muted-foreground text-center">
             Something went wrong — please try again
           </p>
-        )}
-      </div>
-    );
+        }
+      </div>);
+
   }
 
   return (
@@ -507,14 +507,14 @@ export default function Today() {
       ref={scrollRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="mx-auto max-w-lg px-5 pt-12"
-    >
+      className="mx-auto max-w-lg px-5 pt-12">
+
       {/* Pull-to-refresh spinner */}
-      {isRefreshing && (
-        <div className="flex justify-center pb-4 -mt-2">
+      {isRefreshing &&
+      <div className="flex justify-center pb-4 -mt-2">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      )}
+      }
 
       <div className="mb-8">
         <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
@@ -561,27 +561,27 @@ export default function Today() {
       }
 
       {/* Week calendar strip */}
-      {activePhase && effectiveWeekSchedule.length > 0 && (
-        <WeekStrip
-          schedule={effectiveWeekSchedule}
-          allPhaseDays={allPhaseDays}
-          completedDates={weeklyCompletedDates}
-          onDayTap={(day) => setPeekDay(day)}
-        />
-      )}
+      {activePhase && effectiveWeekSchedule.length > 0 &&
+      <WeekStrip
+        schedule={effectiveWeekSchedule}
+        allPhaseDays={allPhaseDays}
+        completedDates={weeklyCompletedDates}
+        onDayTap={(day) => setPeekDay(day)} />
+
+      }
 
       {/* Day peek sheet */}
       <DayPeekSheet
         open={!!peekDay}
-        onOpenChange={(val) => { if (!val) setPeekDay(null); }}
+        onOpenChange={(val) => {if (!val) setPeekDay(null);}}
         day={peekDay}
         isCompleted={peekDay ? weeklyCompletedDates.has(format(peekDay.date, "yyyy-MM-dd")) : false}
-        isPast={peekDay ? (() => { const t = new Date(); t.setHours(0,0,0,0); return peekDay.date < t; })() : false}
+        isPast={peekDay ? (() => {const t = new Date();t.setHours(0, 0, 0, 0);return peekDay.date < t;})() : false}
         onMoveWorkout={(day) => {
           setMoveSourceDow(day.dayOfWeek);
           setMoveSheetOpen(true);
-        }}
-      />
+        }} />
+
 
       {!activePhase ?
       <NoPhaseEmptyState userId={user?.id} /> :
@@ -607,9 +607,9 @@ export default function Today() {
 
           {!activeSession &&
         <div className="rounded-2xl bg-card border border-border p-5">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Train anyway (optional)
-              </p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">TRAIN ANYWAY
+
+          </p>
               <Button
             variant="outline"
             className="w-full rounded-2xl"
@@ -652,8 +652,8 @@ export default function Today() {
         </div> :
 
       <div className="space-y-4">
-          {isCompletedToday ? (
-            <div className="rounded-2xl bg-card/70 border border-border/50 p-5">
+          {isCompletedToday ?
+        <div className="rounded-2xl bg-card/70 border border-border/50 p-5">
               <div>
                 <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
                 <WeekProgressBar />
@@ -663,9 +663,9 @@ export default function Today() {
                 <Check className="h-5 w-5" style={{ color: "hsl(var(--primary) / 0.7)" }} />
               </div>
               <p className="text-xs text-muted-foreground">Completed today</p>
-            </div>
-          ) : (
-            <>
+            </div> :
+
+        <>
               <div className="rounded-2xl bg-card border border-border p-5">
                 <div>
                   <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
@@ -674,84 +674,84 @@ export default function Today() {
 
                 <div>
                   <button
-                    onClick={() => setExercisesOpen(o => !o)}
-                    className="flex items-center justify-between w-full min-h-[44px] py-2 text-left"
-                  >
+                onClick={() => setExercisesOpen((o) => !o)}
+                className="flex items-center justify-between w-full min-h-[44px] py-2 text-left">
+
                     <h2 className="text-lg font-display font-semibold">{todayDay.workout_name || "Strength"}</h2>
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
                         {exerciseCount} exercises
                       </span>
                       <ChevronDown
-                        className="h-4 w-4 text-muted-foreground"
-                        style={{
-                          transform: exercisesOpen ? "rotate(180deg)" : "rotate(0deg)",
-                          transition: "transform 250ms ease-in-out",
-                        }}
-                      />
+                    className="h-4 w-4 text-muted-foreground"
+                    style={{
+                      transform: exercisesOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 250ms ease-in-out"
+                    }} />
+
                     </div>
                   </button>
                   <div
-                    style={{
-                      maxHeight: exercisesOpen ? "500px" : "0px",
-                      opacity: exercisesOpen ? 1 : 0,
-                      overflow: "hidden",
-                      transition: exercisesOpen
-                        ? "max-height 250ms ease-in-out, opacity 200ms ease-in-out 50ms"
-                        : "max-height 250ms ease-in-out, opacity 200ms ease-in-out",
-                    }}
-                  >
+                style={{
+                  maxHeight: exercisesOpen ? "500px" : "0px",
+                  opacity: exercisesOpen ? 1 : 0,
+                  overflow: "hidden",
+                  transition: exercisesOpen ?
+                  "max-height 250ms ease-in-out, opacity 200ms ease-in-out 50ms" :
+                  "max-height 250ms ease-in-out, opacity 200ms ease-in-out"
+                }}>
+
                     <div className="space-y-2 pt-1">
                       {todayDay.phase_day_exercises?.
-                    sort((a: any, b: any) => a.order_index - b.order_index).
-                    map((pde: any) =>
-                    <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
+                  sort((a: any, b: any) => a.order_index - b.order_index).
+                  map((pde: any) =>
+                  <div key={pde.id} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
                             <span className="font-medium">{pde.exercises?.name}</span>
                             <span className="text-muted-foreground text-xs">
                               {pde.num_sets} × {pde.min_reps}{pde.max_reps !== pde.min_reps ? `–${pde.max_reps}` : ""}
                             </span>
                           </div>
-                    )}
+                  )}
                     </div>
                   </div>
                 </div>
               </div>
 
               {(isStrengthDay || todayDay?.day_type === "cardio") && !activeSession &&
-                <div className="space-y-3">
+          <div className="space-y-3">
                   <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
                     Start workout
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                   <button
-                    onClick={() => { setMoveSourceDow(undefined); setMoveSheetOpen(true); }}
-                    className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+              onClick={() => {setMoveSourceDow(undefined);setMoveSheetOpen(true);}}
+              className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors">
+
                     <ArrowLeftRight className="h-3.5 w-3.5" />
                     Move workout
                   </button>
                 </div>
-              }
+          }
 
             </>
-          )}
+        }
         </div>
       }
 
       {/* Move workout sheet — global so it works from any entry point */}
-      {activePhase && user && (
-        <MoveWorkoutSheet
-          open={moveSheetOpen}
-          onOpenChange={setMoveSheetOpen}
-          activePhaseId={activePhase.id}
-          userId={user.id}
-          todayWorkoutName={todayDay?.workout_name || ""}
-          effectiveWeekSchedule={effectiveWeekSchedule}
-          completedDates={weeklyCompletedDates}
-          currentWeekOverrides={currentWeekOverrides}
-          sourceDayOfWeek={moveSourceDow}
-        />
-      )}
+      {activePhase && user &&
+      <MoveWorkoutSheet
+        open={moveSheetOpen}
+        onOpenChange={setMoveSheetOpen}
+        activePhaseId={activePhase.id}
+        userId={user.id}
+        todayWorkoutName={todayDay?.workout_name || ""}
+        effectiveWeekSchedule={effectiveWeekSchedule}
+        completedDates={weeklyCompletedDates}
+        currentWeekOverrides={currentWeekOverrides}
+        sourceDayOfWeek={moveSourceDow} />
+
+      }
     </div>);
 
 }
