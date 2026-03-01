@@ -44,6 +44,7 @@ export function MoveWorkoutSheet({
   todayWorkoutName,
   effectiveWeekSchedule,
   completedDates,
+  currentWeekOverrides = [],
   sourceDayOfWeek,
 }: Props) {
   const queryClient = useQueryClient();
