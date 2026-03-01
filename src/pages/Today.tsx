@@ -21,6 +21,8 @@ import {
 "@/components/ui/sheet";
 import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
 import { MoveWorkoutSheet } from "@/components/MoveWorkoutSheet";
+import { WeekStrip } from "@/components/WeekStrip";
+import { DayPeekSheet } from "@/components/DayPeekSheet";
 
 export interface EffectiveDaySchedule {
   dayOfWeek: number;
@@ -48,6 +50,8 @@ export default function Today() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exercisesOpen, setExercisesOpen] = useState(false);
   const [moveSheetOpen, setMoveSheetOpen] = useState(false);
+  const [peekDay, setPeekDay] = useState<EffectiveDaySchedule | null>(null);
+  const [moveSourceDow, setMoveSourceDow] = useState<number | undefined>(undefined);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -556,6 +560,34 @@ export default function Today() {
         </div>
       }
 
+      {/* Week calendar strip */}
+      {activePhase && effectiveWeekSchedule.length > 0 && (
+        <WeekStrip
+          schedule={effectiveWeekSchedule}
+          completedDates={weeklyCompletedDates}
+          onDayTap={(day) => setPeekDay(day)}
+        />
+      )}
+
+      {/* Day peek sheet */}
+      <DayPeekSheet
+        open={!!peekDay}
+        onOpenChange={(val) => { if (!val) setPeekDay(null); }}
+        day={peekDay}
+        isCompleted={peekDay ? weeklyCompletedDates.has(format(peekDay.date, "yyyy-MM-dd")) : false}
+        isPast={peekDay ? (() => { const t = new Date(); t.setHours(0,0,0,0); return peekDay.date < t; })() : false}
+        onMoveWorkout={(day) => {
+          setMoveSourceDow(day.dayOfWeek);
+          setMoveSheetOpen(true);
+        }}
+        onMoveWorkoutHere={(day) => {
+          // For rest days, find a strength day to move here
+          // Open move sheet for the first available strength day targeting this rest day
+          setMoveSourceDow(undefined);
+          setMoveSheetOpen(true);
+        }}
+      />
+
       {!activePhase ?
       <NoPhaseEmptyState userId={user?.id} /> :
       !todayDay ?
@@ -697,7 +729,7 @@ export default function Today() {
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                   <button
-                    onClick={() => setMoveSheetOpen(true)}
+                    onClick={() => { setMoveSourceDow(undefined); setMoveSheetOpen(true); }}
                     className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <ArrowLeftRight className="h-3.5 w-3.5" />
@@ -714,6 +746,7 @@ export default function Today() {
                 todayWorkoutName={todayDay?.workout_name || "Strength"}
                 effectiveWeekSchedule={effectiveWeekSchedule}
                 completedDates={weeklyCompletedDates}
+                sourceDayOfWeek={moveSourceDow}
               />
             </>
           )}

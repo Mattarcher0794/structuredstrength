@@ -21,7 +21,8 @@ interface Props {
   userId: string;
   todayWorkoutName: string;
   effectiveWeekSchedule: EffectiveDaySchedule[];
-  completedDates: Set<string>; // YYYY-MM-DD strings of completed days
+  completedDates: Set<string>;
+  sourceDayOfWeek?: number; // when initiated from calendar strip instead of today
 }
 
 export function MoveWorkoutSheet({
@@ -32,15 +33,18 @@ export function MoveWorkoutSheet({
   todayWorkoutName,
   effectiveWeekSchedule,
   completedDates,
+  sourceDayOfWeek,
 }: Props) {
   const queryClient = useQueryClient();
-  const todayDow = getTodayDayOfWeek();
+  const sourceDow = sourceDayOfWeek ?? getTodayDayOfWeek();
+  const sourceDay = effectiveWeekSchedule.find(d => d.dayOfWeek === sourceDow);
+  const sourceWorkoutName = sourceDay?.workoutName ?? todayWorkoutName;
   const [confirmTarget, setConfirmTarget] = useState<EffectiveDaySchedule | null>(null);
   const [saving, setSaving] = useState(false);
 
   const availableDays = effectiveWeekSchedule.filter((d) => {
-    if (d.isToday) return false;
-    // Only future days — strip time for date-only comparison
+    if (d.dayOfWeek === sourceDow) return false;
+    // Only future days
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     if (d.date <= todayStart) return false;
@@ -63,7 +67,7 @@ export function MoveWorkoutSheet({
           phase_id: activePhaseId,
           user_id: userId,
           week_start_date: weekStart,
-          original_day_of_week: todayDow,
+          original_day_of_week: sourceDow,
           overridden_day_of_week: targetDow,
         },
       ];
@@ -74,7 +78,7 @@ export function MoveWorkoutSheet({
           user_id: userId,
           week_start_date: weekStart,
           original_day_of_week: targetDow,
-          overridden_day_of_week: todayDow,
+          overridden_day_of_week: sourceDow,
         });
       }
 
@@ -132,7 +136,7 @@ export function MoveWorkoutSheet({
         <DrawerHeader className="text-left">
           <DrawerTitle>Move workout to…</DrawerTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Pick a day to move today's {todayWorkoutName || "workout"} to this week
+            Pick a day to move {sourceDayOfWeek ? `${["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][sourceDow]}'s` : "today's"} {sourceWorkoutName || "workout"} to this week
           </p>
         </DrawerHeader>
 
@@ -141,7 +145,7 @@ export function MoveWorkoutSheet({
             <div className="space-y-4">
               <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
                 <p className="font-medium">
-                  Move {todayWorkoutName || "workout"} to{" "}
+                  Move {sourceWorkoutName || "workout"} to{" "}
                   {format(confirmTarget.date, "EEE d MMM")}?
                 </p>
                 <p className="text-muted-foreground text-xs">
