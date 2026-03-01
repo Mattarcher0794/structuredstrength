@@ -69,7 +69,8 @@ export default function Today() {
       setIsRefreshing(true);
       const todayStr = format(new Date(), "yyyy-MM-dd");
       await queryClient.invalidateQueries({ queryKey: ["active-phase"] });
-      await queryClient.invalidateQueries({ queryKey: ["today-day"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-phase-days"] });
+      await queryClient.invalidateQueries({ queryKey: ["week-overrides"] });
       await queryClient.invalidateQueries({ queryKey: ["active-session"] });
       await queryClient.invalidateQueries({ queryKey: ["strength-days"] });
       await queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
