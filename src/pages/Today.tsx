@@ -560,6 +560,34 @@ export default function Today() {
         </div>
       }
 
+      {/* Week calendar strip */}
+      {activePhase && effectiveWeekSchedule.length > 0 && (
+        <WeekStrip
+          schedule={effectiveWeekSchedule}
+          completedDates={weeklyCompletedDates}
+          onDayTap={(day) => setPeekDay(day)}
+        />
+      )}
+
+      {/* Day peek sheet */}
+      <DayPeekSheet
+        open={!!peekDay}
+        onOpenChange={(val) => { if (!val) setPeekDay(null); }}
+        day={peekDay}
+        isCompleted={peekDay ? weeklyCompletedDates.has(format(peekDay.date, "yyyy-MM-dd")) : false}
+        isPast={peekDay ? (() => { const t = new Date(); t.setHours(0,0,0,0); return peekDay.date < t; })() : false}
+        onMoveWorkout={(day) => {
+          setMoveSourceDow(day.dayOfWeek);
+          setMoveSheetOpen(true);
+        }}
+        onMoveWorkoutHere={(day) => {
+          // For rest days, find a strength day to move here
+          // Open move sheet for the first available strength day targeting this rest day
+          setMoveSourceDow(undefined);
+          setMoveSheetOpen(true);
+        }}
+      />
+
       {!activePhase ?
       <NoPhaseEmptyState userId={user?.id} /> :
       !todayDay ?
