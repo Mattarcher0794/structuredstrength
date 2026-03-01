@@ -33,15 +33,18 @@ export function MoveWorkoutSheet({
   todayWorkoutName,
   effectiveWeekSchedule,
   completedDates,
+  sourceDayOfWeek,
 }: Props) {
   const queryClient = useQueryClient();
-  const todayDow = getTodayDayOfWeek();
+  const sourceDow = sourceDayOfWeek ?? getTodayDayOfWeek();
+  const sourceDay = effectiveWeekSchedule.find(d => d.dayOfWeek === sourceDow);
+  const sourceWorkoutName = sourceDay?.workoutName ?? todayWorkoutName;
   const [confirmTarget, setConfirmTarget] = useState<EffectiveDaySchedule | null>(null);
   const [saving, setSaving] = useState(false);
 
   const availableDays = effectiveWeekSchedule.filter((d) => {
-    if (d.isToday) return false;
-    // Only future days — strip time for date-only comparison
+    if (d.dayOfWeek === sourceDow) return false;
+    // Only future days
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     if (d.date <= todayStart) return false;
