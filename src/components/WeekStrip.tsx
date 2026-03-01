@@ -114,12 +114,15 @@ export function WeekStrip({ schedule, allPhaseDays, completedDates, onDayTap }: 
             <div className="h-3 flex items-center justify-center">
               {isCompleted ? (
                 <Check className="h-2.5 w-2.5 text-primary" />
-              ) : day.isToday && day.dayType === "strength" ? (
-                <span className="block w-[6px] h-[6px] rounded-full border border-primary" />
+              ) : day.isToday && (day.dayType === "strength" || day.dayType === "cardio") ? (
+                <span
+                  className="block w-[6px] h-[6px] rounded-full border"
+                  style={{ borderColor: day.dayType === "cardio" ? "#A8D4E0" : "hsl(var(--primary))" }}
+                />
               ) : day.dayType === "strength" ? (
                 <span className="block w-[6px] h-[6px] rounded-full bg-primary" />
               ) : day.dayType === "cardio" ? (
-                <span className="block w-[6px] h-[6px] rounded-full bg-muted-foreground/40" />
+                <span className="block w-[6px] h-[6px] rounded-full" style={{ backgroundColor: "#A8D4E0" }} />
               ) : (
                 <span className="block w-[6px] h-[6px] rounded-full bg-muted-foreground/20" />
               )}

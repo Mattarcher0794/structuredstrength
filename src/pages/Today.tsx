@@ -717,7 +717,7 @@ export default function Today() {
                 </div>
               </div>
 
-              {isStrengthDay && !activeSession &&
+              {(isStrengthDay || todayDay?.day_type === "cardio") && !activeSession &&
                 <div className="space-y-3">
                   <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
                     Start workout

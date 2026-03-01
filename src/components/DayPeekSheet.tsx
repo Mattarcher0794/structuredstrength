@@ -42,7 +42,7 @@ export function DayPeekSheet({
       );
     if (day.dayType === "cardio")
       return (
-        <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium" style={{ backgroundColor: "rgba(168,212,224,0.2)", color: "#5a9bae" }}>
           Cardio
         </span>
       );
@@ -80,11 +80,11 @@ export function DayPeekSheet({
               )}
             </div>
 
-            {day.dayType === "strength" && day.workoutName && (
+            {(day.dayType === "strength" || day.dayType === "cardio") && day.workoutName && (
               <p className="text-lg font-display font-semibold">{day.workoutName}</p>
             )}
 
-            {day.dayType === "strength" && exerciseCount > 0 && (
+            {(day.dayType === "strength" || day.dayType === "cardio") && exerciseCount > 0 && (
               <p className="text-sm text-muted-foreground">
                 {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""}
               </p>
@@ -99,7 +99,7 @@ export function DayPeekSheet({
           </div>
 
           {/* Actions for future uncompleted days */}
-          {isFutureUncompleted && day.dayType === "strength" && (
+          {isFutureUncompleted && (day.dayType === "strength" || day.dayType === "cardio") && (
             <Button
               variant="outline"
               className="w-full rounded-2xl"

@@ -95,13 +95,13 @@ export function MoveWorkoutSheet({
       const weekStart = getWeekStartDate();
       const targetDow = confirmTarget.dayOfWeek;
 
-      const sourceIsStrength = sourceDay?.dayType === "strength";
-      const targetIsStrength = confirmTarget.dayType === "strength";
+      const sourceIsActive = ["strength", "cardio"].includes(sourceDay?.dayType ?? "");
+      const targetIsActive = ["strength", "cardio"].includes(confirmTarget.dayType);
 
       const rows: any[] = [];
 
-      if (sourceIsStrength && targetIsStrength) {
-        // Scenario A — Strength ↔ Strength swap: two rows
+      if (sourceIsActive && targetIsActive) {
+        // Scenario A — Active ↔ Active swap: two rows
         const trueSourceDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
         const trueTargetDow = resolveOriginalDow(targetDow, currentWeekOverrides);
         rows.push(
@@ -121,7 +121,7 @@ export function MoveWorkoutSheet({
           }
         );
       } else {
-        // Scenario B — Strength → Rest: one row only
+        // Scenario B — Active → Rest: one row only
         const trueStrengthDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
         rows.push({
           phase_id: activePhaseId,
@@ -170,7 +170,7 @@ export function MoveWorkoutSheet({
       );
     if (dayType === "cardio")
       return (
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: "rgba(168,212,224,0.2)", color: "#5a9bae" }}>
           Cardio
         </span>
       );
@@ -200,8 +200,8 @@ export function MoveWorkoutSheet({
                   {format(confirmTarget.date, "EEE d MMM")}?
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {confirmTarget.dayType === "strength"
-                    ? `${confirmTarget.workoutName || "Strength"} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
+                  {["strength", "cardio"].includes(confirmTarget.dayType)
+                    ? `${confirmTarget.workoutName || confirmTarget.dayType === "cardio" ? "Cardio" : "Strength"} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
                     : `${getDayDisplayName(sourceDay?.date, true)} will become a rest day.`}
                 </p>
               </div>
@@ -246,7 +246,7 @@ export function MoveWorkoutSheet({
                       </span>
                     )}
                   </div>
-                  {day.dayType === "strength" && day.workoutName && (
+                  {(day.dayType === "strength" || day.dayType === "cardio") && day.workoutName && (
                     <p className="text-xs text-muted-foreground">{day.workoutName}</p>
                   )}
                 </div>
