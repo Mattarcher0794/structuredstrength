@@ -51,7 +51,7 @@ function NumericField({
         }}
         autoCorrect="off"
         spellCheck={false}
-        className="h-[52px] w-full rounded-xl border border-border bg-card text-center text-xl font-medium text-foreground outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ring-offset-background px-3"
+        className="h-[44px] w-full rounded-xl border border-border bg-card text-center text-[17px] font-medium text-foreground outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ring-offset-background px-2.5"
       />
     </div>
   );
@@ -82,8 +82,8 @@ export default function ExerciseConfigCard({
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 block">
           Prescription
         </span>
-        <div className="rounded-xl bg-muted/30 p-4">
-          <div className="flex gap-3">
+        <div className="rounded-xl bg-muted/30 p-3">
+          <div className="flex gap-2">
             <NumericField
               label="Sets"
               value={numSets}
