@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +19,17 @@ import {
   SheetHeader,
   SheetTitle } from
 "@/components/ui/sheet";
+import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
+
+export interface EffectiveDaySchedule {
+  dayOfWeek: number;
+  date: Date;
+  dayType: string;
+  workoutName: string | null;
+  phaseDay: any | null;
+  isToday: boolean;
+  isOverridden: boolean;
+}
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
