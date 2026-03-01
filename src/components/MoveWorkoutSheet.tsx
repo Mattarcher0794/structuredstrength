@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format, isToday } from "date-fns";
 import { ArrowLeftRight, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getWeekStartDate, getTodayDayOfWeek } from "@/lib/weekUtils";
 import type { EffectiveDaySchedule } from "@/pages/Today";
@@ -38,9 +38,11 @@ interface Props {
   userId: string;
   todayWorkoutName: string;
   effectiveWeekSchedule: EffectiveDaySchedule[];
+  allPhaseDays?: any[];
   completedDates: Set<string>;
   currentWeekOverrides?: { original_day_of_week: number; overridden_day_of_week: number }[];
-  sourceDayOfWeek?: number; // when initiated from calendar strip instead of today
+  sourceDayOfWeek?: number;
+  sourceDayDate?: Date;
 }
 
 export function MoveWorkoutSheet({
@@ -50,13 +52,80 @@ export function MoveWorkoutSheet({
   userId,
   todayWorkoutName,
   effectiveWeekSchedule,
+  allPhaseDays,
   completedDates,
   currentWeekOverrides = [],
   sourceDayOfWeek,
+  sourceDayDate,
 }: Props) {
   const queryClient = useQueryClient();
   const sourceDow = sourceDayOfWeek ?? getTodayDayOfWeek();
-  const sourceDay = effectiveWeekSchedule.find(d => d.dayOfWeek === sourceDow);
+  const resolvedSourceDate = sourceDayDate ?? new Date();
+  const sourceWeekStart = getWeekStartDate(resolvedSourceDate);
+  const currentWeekStart = getWeekStartDate();
+  const isSourceWeekCurrent = sourceWeekStart === currentWeekStart;
+
+  // Fetch overrides for the source week (only when it differs from current week)
+  const { data: sourceWeekOverridesRaw = [] } = useQuery({
+    queryKey: ["week-overrides", userId, activePhaseId, sourceWeekStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("phase_day_overrides")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("phase_id", activePhaseId)
+        .eq("week_start_date", sourceWeekStart);
+      return data ?? [];
+    },
+    enabled: open && !isSourceWeekCurrent && !!userId && !!activePhaseId,
+  });
+
+  const sourceOverrides = isSourceWeekCurrent ? currentWeekOverrides : sourceWeekOverridesRaw;
+
+  // Build effective schedule for the source week
+  const sourceWeekSchedule = useMemo<EffectiveDaySchedule[]>(() => {
+    if (isSourceWeekCurrent) return effectiveWeekSchedule;
+    if (!allPhaseDays) return [];
+
+    const mondayDate = new Date(sourceWeekStart + "T00:00:00");
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const dayOfWeek = i + 1;
+      const date = new Date(mondayDate);
+      date.setDate(mondayDate.getDate() + i);
+
+      const inbound = sourceOverrides.find((o) => o.overridden_day_of_week === dayOfWeek);
+      const outbound = sourceOverrides.find((o) => o.original_day_of_week === dayOfWeek);
+
+      let phaseDay: any | null = null;
+      let isOverridden = false;
+
+      if (inbound) {
+        phaseDay = allPhaseDays.find((d) => d.day_of_week === inbound.original_day_of_week) ?? null;
+        isOverridden = true;
+      } else if (outbound) {
+        phaseDay = { day_type: "rest", workout_name: null, phase_day_exercises: [] };
+        isOverridden = true;
+      } else {
+        phaseDay = allPhaseDays.find((d) => d.day_of_week === dayOfWeek) ?? null;
+      }
+
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+
+      return {
+        dayOfWeek,
+        date,
+        dayType: phaseDay?.day_type ?? "rest",
+        workoutName: phaseDay?.workout_name ?? null,
+        phaseDay,
+        isToday: format(date, "yyyy-MM-dd") === format(todayDate, "yyyy-MM-dd"),
+        isOverridden,
+      };
+    });
+  }, [isSourceWeekCurrent, effectiveWeekSchedule, allPhaseDays, sourceWeekStart, sourceOverrides]);
+
+  const sourceDay = sourceWeekSchedule.find(d => d.dayOfWeek === sourceDow);
   const sourceWorkoutName = sourceDay?.workoutName ?? todayWorkoutName;
   const sourceDayTypeLabel = (sourceDay?.dayType ?? "strength").charAt(0).toUpperCase() + (sourceDay?.dayType ?? "strength").slice(1);
   const [confirmTarget, setConfirmTarget] = useState<EffectiveDaySchedule | null>(null);
@@ -67,22 +136,16 @@ export function MoveWorkoutSheet({
     todayStart.setHours(0, 0, 0, 0);
     const isSunday = todayStart.getDay() === 0;
 
-    // Determine the source day's week window (Mon–Sun)
-    const sourceDayDate = sourceDay?.date ?? todayStart;
-    const sourceWeekStartStr = getWeekStartDate(sourceDayDate);
-    const sourceWeekStart = new Date(sourceWeekStartStr + "T00:00:00");
-    const sourceWeekEnd = new Date(sourceWeekStart);
-    sourceWeekEnd.setDate(sourceWeekStart.getDate() + 6);
+    const sourceWeekMonday = new Date(sourceWeekStart + "T00:00:00");
+    const sourceWeekSunday = new Date(sourceWeekMonday);
+    sourceWeekSunday.setDate(sourceWeekMonday.getDate() + 6);
 
-    return effectiveWeekSchedule.filter((d) => {
+    return sourceWeekSchedule.filter((d) => {
       if (d.dayOfWeek === sourceDow) return false;
-      // Only future days
       if (d.date <= todayStart) return false;
       const dateStr = format(d.date, "yyyy-MM-dd");
       if (completedDates.has(dateStr)) return false;
-      // Must be within the same week as the source day
-      if (d.date < sourceWeekStart || d.date > sourceWeekEnd) return false;
-      // Exclude Sunday targets when today is Sunday
+      if (d.date < sourceWeekMonday || d.date > sourceWeekSunday) return false;
       if (isSunday && d.date.getDay() === 0) return false;
       return true;
     });
@@ -93,7 +156,6 @@ export function MoveWorkoutSheet({
     setSaving(true);
 
     try {
-      const weekStart = getWeekStartDate();
       const targetDow = confirmTarget.dayOfWeek;
 
       const sourceIsActive = ["strength", "cardio"].includes(sourceDay?.dayType ?? "");
@@ -102,32 +164,30 @@ export function MoveWorkoutSheet({
       const rows: any[] = [];
 
       if (sourceIsActive && targetIsActive) {
-        // Scenario A — Active ↔ Active swap: two rows
-        const trueSourceDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
-        const trueTargetDow = resolveOriginalDow(targetDow, currentWeekOverrides);
+        const trueSourceDow = resolveOriginalDow(sourceDow, sourceOverrides);
+        const trueTargetDow = resolveOriginalDow(targetDow, sourceOverrides);
         rows.push(
           {
             phase_id: activePhaseId,
             user_id: userId,
-            week_start_date: weekStart,
+            week_start_date: sourceWeekStart,
             original_day_of_week: trueSourceDow,
             overridden_day_of_week: targetDow,
           },
           {
             phase_id: activePhaseId,
             user_id: userId,
-            week_start_date: weekStart,
+            week_start_date: sourceWeekStart,
             original_day_of_week: trueTargetDow,
             overridden_day_of_week: sourceDow,
           }
         );
       } else {
-        // Scenario B — Active → Rest: one row only
-        const trueStrengthDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
+        const trueStrengthDow = resolveOriginalDow(sourceDow, sourceOverrides);
         rows.push({
           phase_id: activePhaseId,
           user_id: userId,
-          week_start_date: weekStart,
+          week_start_date: sourceWeekStart,
           original_day_of_week: trueStrengthDow,
           overridden_day_of_week: targetDow,
         });
@@ -143,7 +203,6 @@ export function MoveWorkoutSheet({
 
       toast.success(`Workout moved to ${format(confirmTarget.date, "EEE d MMM")}`);
 
-      // Re-fetch overrides to ensure next swap has correct state
       await queryClient.invalidateQueries({ queryKey: ["week-overrides"] });
       await queryClient.invalidateQueries({ queryKey: ["all-phase-days"] });
 
