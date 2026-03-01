@@ -76,6 +76,7 @@ export default function Today() {
       await queryClient.invalidateQueries({ queryKey: ["active-session"] });
       await queryClient.invalidateQueries({ queryKey: ["strength-days"] });
       await queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
+      await queryClient.invalidateQueries({ queryKey: ["weekly-completed-dates"] });
       await queryClient.invalidateQueries({ queryKey: ["nutrition-today"] });
       setIsRefreshing(false);
     }
