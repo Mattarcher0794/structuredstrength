@@ -21,7 +21,8 @@ interface Props {
   userId: string;
   todayWorkoutName: string;
   effectiveWeekSchedule: EffectiveDaySchedule[];
-  completedDates: Set<string>; // YYYY-MM-DD strings of completed days
+  completedDates: Set<string>;
+  sourceDayOfWeek?: number; // when initiated from calendar strip instead of today
 }
 
 export function MoveWorkoutSheet({
