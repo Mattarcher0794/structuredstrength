@@ -1,21 +1,24 @@
 /**
  * Returns the Monday of the current week as a YYYY-MM-DD string.
  */
-export function getWeekStartDate(): string {
-  const today = new Date();
-  const day = today.getDay(); // 0=Sun, 1=Mon...
+export function getWeekStartDate(date?: Date): string {
+  const ref = date ? new Date(date) : new Date();
+  const day = ref.getDay(); // 0=Sun, 1=Mon...
 
   let diff: number;
-  if (day === 0) {
-    // Sunday — look ahead to upcoming Monday
+  if (!date && day === 0) {
+    // Today is Sunday and no explicit date — look ahead to upcoming Monday
     diff = 1;
+  } else if (day === 0) {
+    // Explicit date that is a Sunday — treat as last day of its week
+    diff = -6;
   } else {
     // Mon-Sat — go back to this week's Monday
     diff = 1 - day;
   }
 
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diff);
+  const monday = new Date(ref);
+  monday.setDate(ref.getDate() + diff);
   return monday.toISOString().split("T")[0];
 }
 
