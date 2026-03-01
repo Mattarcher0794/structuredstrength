@@ -580,6 +580,7 @@ export default function Today() {
         isPast={peekDay ? (() => {const t = new Date();t.setHours(0, 0, 0, 0);return peekDay.date < t;})() : false}
         onMoveWorkout={(day) => {
           setMoveSourceDow(day.dayOfWeek);
+          setMoveSourceDate(day.date);
           setMoveSheetOpen(true);
         }} />
 
