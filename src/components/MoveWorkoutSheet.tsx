@@ -201,7 +201,7 @@ export function MoveWorkoutSheet({
                 </p>
                 <p className="text-muted-foreground text-xs">
                   {["strength", "cardio"].includes(confirmTarget.dayType)
-                    ? `${confirmTarget.workoutName || confirmTarget.dayType === "cardio" ? "Cardio" : "Strength"} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
+                    ? `${confirmTarget.workoutName || (confirmTarget.dayType === "cardio" ? "Cardio" : "Strength")} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
                     : `${getDayDisplayName(sourceDay?.date, true)} will become a rest day.`}
                 </p>
               </div>
