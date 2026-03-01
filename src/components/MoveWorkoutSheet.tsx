@@ -67,7 +67,7 @@ export function MoveWorkoutSheet({
           phase_id: activePhaseId,
           user_id: userId,
           week_start_date: weekStart,
-          original_day_of_week: todayDow,
+          original_day_of_week: sourceDow,
           overridden_day_of_week: targetDow,
         },
       ];
@@ -78,7 +78,7 @@ export function MoveWorkoutSheet({
           user_id: userId,
           week_start_date: weekStart,
           original_day_of_week: targetDow,
-          overridden_day_of_week: todayDow,
+          overridden_day_of_week: sourceDow,
         });
       }
 
