@@ -19,7 +19,7 @@ import {
   SheetHeader,
   SheetTitle } from
 "@/components/ui/sheet";
-import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
+import { getWeekStartDate, getNextWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
 import { MoveWorkoutSheet } from "@/components/MoveWorkoutSheet";
 import { WeekStrip } from "@/components/WeekStrip";
 import { DayPeekSheet } from "@/components/DayPeekSheet";
@@ -115,58 +115,78 @@ export default function Today() {
     enabled: !!activePhase
   });
 
-  // Fetch overrides for current week
+  // Fetch overrides for current week AND next week
   const weekStartDate = getWeekStartDate();
-  const { data: currentWeekOverrides = [] } = useQuery({
-    queryKey: ["week-overrides", user?.id, activePhase?.id, weekStartDate],
+  const nextWeekStartDate = getNextWeekStartDate();
+  const { data: allOverrides = [] } = useQuery({
+    queryKey: ["week-overrides", user?.id, activePhase?.id, weekStartDate, nextWeekStartDate],
     queryFn: async () => {
-      const { data } = await supabase.
-      from("phase_day_overrides").
-      select("*").
-      eq("user_id", user!.id).
-      eq("phase_id", activePhase!.id).
-      eq("week_start_date", weekStartDate);
+      const { data } = await supabase
+        .from("phase_day_overrides")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("phase_id", activePhase!.id)
+        .in("week_start_date", [weekStartDate, nextWeekStartDate]);
       return data ?? [];
     },
     enabled: !!user && !!activePhase
   });
 
-  // Resolve effective schedule for the full week
+  const currentWeekOverrides = useMemo(
+    () => allOverrides.filter((o) => o.week_start_date === weekStartDate),
+    [allOverrides, weekStartDate]
+  );
+  const nextWeekOverrides = useMemo(
+    () => allOverrides.filter((o) => o.week_start_date === nextWeekStartDate),
+    [allOverrides, nextWeekStartDate]
+  );
+
+  // Resolve effective schedule for both weeks (14 days)
   const effectiveWeekSchedule = useMemo<EffectiveDaySchedule[]>(() => {
     if (!allPhaseDays) return [];
     const todayDow = getTodayDayOfWeek();
+    const currentMonday = new Date(weekStartDate + "T00:00:00");
+    const nextMonday = new Date(nextWeekStartDate + "T00:00:00");
 
-    return Array.from({ length: 7 }, (_, i) => {
-      const dayOfWeek = i + 1;
-      const inbound = currentWeekOverrides.find((o) => o.overridden_day_of_week === dayOfWeek);
-      const outbound = currentWeekOverrides.find((o) => o.original_day_of_week === dayOfWeek);
+    function resolveWeek(monday: Date, overrides: any[], length: number): EffectiveDaySchedule[] {
+      return Array.from({ length }, (_, i) => {
+        const dayOfWeek = i + 1;
+        const inbound = overrides.find((o) => o.overridden_day_of_week === dayOfWeek);
+        const outbound = overrides.find((o) => o.original_day_of_week === dayOfWeek);
 
-      let phaseDay: any | null = null;
-      let isOverridden = false;
+        let phaseDay: any | null = null;
+        let isOverridden = false;
 
-      if (inbound) {
-        // Another day's workout has been moved TO this day
-        phaseDay = allPhaseDays.find((d) => d.day_of_week === inbound.original_day_of_week) ?? null;
-        isOverridden = true;
-      } else if (outbound) {
-        // This day's workout has been moved away — treat as rest
-        phaseDay = { day_type: "rest", workout_name: null, phase_day_exercises: [] };
-        isOverridden = true;
-      } else {
-        phaseDay = allPhaseDays.find((d) => d.day_of_week === dayOfWeek) ?? null;
-      }
+        if (inbound) {
+          phaseDay = allPhaseDays.find((d) => d.day_of_week === inbound.original_day_of_week) ?? null;
+          isOverridden = true;
+        } else if (outbound) {
+          phaseDay = { day_type: "rest", workout_name: null, phase_day_exercises: [] };
+          isOverridden = true;
+        } else {
+          phaseDay = allPhaseDays.find((d) => d.day_of_week === dayOfWeek) ?? null;
+        }
 
-      return {
-        dayOfWeek,
-        date: getDateForDayOfWeek(dayOfWeek),
-        dayType: phaseDay?.day_type ?? "rest",
-        workoutName: phaseDay?.workout_name ?? null,
-        phaseDay,
-        isToday: dayOfWeek === todayDow,
-        isOverridden
-      };
-    });
-  }, [allPhaseDays, currentWeekOverrides]);
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+
+        return {
+          dayOfWeek,
+          date,
+          dayType: phaseDay?.day_type ?? "rest",
+          workoutName: phaseDay?.workout_name ?? null,
+          phaseDay,
+          isToday: monday === currentMonday && dayOfWeek === todayDow,
+          isOverridden
+        };
+      });
+    }
+
+    return [
+      ...resolveWeek(currentMonday, currentWeekOverrides, 7),
+      ...resolveWeek(nextMonday, nextWeekOverrides, 7),
+    ];
+  }, [allPhaseDays, currentWeekOverrides, nextWeekOverrides, weekStartDate, nextWeekStartDate]);
 
   // Resolve today's effective phase day
   const todaySchedule = effectiveWeekSchedule.find((d) => d.isToday);
