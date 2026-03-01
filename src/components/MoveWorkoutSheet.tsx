@@ -14,6 +14,16 @@ import { toast } from "sonner";
 import { getWeekStartDate, getTodayDayOfWeek } from "@/lib/weekUtils";
 import type { EffectiveDaySchedule } from "@/pages/Today";
 
+/** Trace back through overrides to find the original phase-template day_of_week */
+function resolveOriginalDow(
+  effectiveDow: number,
+  overrides: { original_day_of_week: number; overridden_day_of_week: number }[]
+): number {
+  const inbound = overrides.find(o => o.overridden_day_of_week === effectiveDow);
+  if (inbound) return inbound.original_day_of_week;
+  return effectiveDow;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,6 +32,7 @@ interface Props {
   todayWorkoutName: string;
   effectiveWeekSchedule: EffectiveDaySchedule[];
   completedDates: Set<string>;
+  currentWeekOverrides?: { original_day_of_week: number; overridden_day_of_week: number }[];
   sourceDayOfWeek?: number; // when initiated from calendar strip instead of today
 }
 
