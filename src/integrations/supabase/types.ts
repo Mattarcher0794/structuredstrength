@@ -146,6 +146,44 @@ export type Database = {
           },
         ]
       }
+      phase_day_overrides: {
+        Row: {
+          created_at: string | null
+          id: string
+          original_day_of_week: number
+          overridden_day_of_week: number
+          phase_id: string
+          user_id: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          original_day_of_week: number
+          overridden_day_of_week: number
+          phase_id: string
+          user_id: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          original_day_of_week?: number
+          overridden_day_of_week?: number
+          phase_id?: string
+          user_id?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_day_overrides_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phase_days: {
         Row: {
           day_of_week: number

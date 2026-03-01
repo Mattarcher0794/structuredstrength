@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +19,17 @@ import {
   SheetHeader,
   SheetTitle } from
 "@/components/ui/sheet";
+import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
+
+export interface EffectiveDaySchedule {
+  dayOfWeek: number;
+  date: Date;
+  dayType: string;
+  workoutName: string | null;
+  phaseDay: any | null;
+  isToday: boolean;
+  isOverridden: boolean;
+}
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
@@ -58,7 +69,8 @@ export default function Today() {
       setIsRefreshing(true);
       const todayStr = format(new Date(), "yyyy-MM-dd");
       await queryClient.invalidateQueries({ queryKey: ["active-phase"] });
-      await queryClient.invalidateQueries({ queryKey: ["today-day"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-phase-days"] });
+      await queryClient.invalidateQueries({ queryKey: ["week-overrides"] });
       await queryClient.invalidateQueries({ queryKey: ["active-session"] });
       await queryClient.invalidateQueries({ queryKey: ["strength-days"] });
       await queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
@@ -81,19 +93,76 @@ export default function Today() {
     enabled: !!user
   });
 
-  const { data: todayDay } = useQuery({
-    queryKey: ["today-day", activePhase?.id, dow],
+  // Fetch all phase days for the active phase
+  const { data: allPhaseDays } = useQuery({
+    queryKey: ["all-phase-days", activePhase?.id],
     queryFn: async () => {
-      const { data } = await supabase.
-      from("phase_days").
-      select("*, phase_day_exercises(*, exercises(*))").
-      eq("phase_id", activePhase!.id).
-      eq("day_of_week", dow).
-      maybeSingle();
-      return data;
+      const { data } = await supabase
+        .from("phase_days")
+        .select("*, phase_day_exercises(*, exercises(*))")
+        .eq("phase_id", activePhase!.id)
+        .order("day_of_week");
+      return data ?? [];
     },
     enabled: !!activePhase
   });
+
+  // Fetch overrides for current week
+  const weekStartDate = getWeekStartDate();
+  const { data: currentWeekOverrides = [] } = useQuery({
+    queryKey: ["week-overrides", user?.id, activePhase?.id, weekStartDate],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("phase_day_overrides")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("phase_id", activePhase!.id)
+        .eq("week_start_date", weekStartDate);
+      return data ?? [];
+    },
+    enabled: !!user && !!activePhase
+  });
+
+  // Resolve effective schedule for the full week
+  const effectiveWeekSchedule = useMemo<EffectiveDaySchedule[]>(() => {
+    if (!allPhaseDays) return [];
+    const todayDow = getTodayDayOfWeek();
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const dayOfWeek = i + 1;
+      const inbound = currentWeekOverrides.find(o => o.overridden_day_of_week === dayOfWeek);
+      const outbound = currentWeekOverrides.find(o => o.original_day_of_week === dayOfWeek);
+
+      let phaseDay: any | null = null;
+      let isOverridden = false;
+
+      if (inbound) {
+        // Another day's workout has been moved TO this day
+        phaseDay = allPhaseDays.find(d => d.day_of_week === inbound.original_day_of_week) ?? null;
+        isOverridden = true;
+      } else if (outbound) {
+        // This day's workout has been moved away — treat as rest
+        phaseDay = { day_type: "rest", workout_name: null, phase_day_exercises: [] };
+        isOverridden = true;
+      } else {
+        phaseDay = allPhaseDays.find(d => d.day_of_week === dayOfWeek) ?? null;
+      }
+
+      return {
+        dayOfWeek,
+        date: getDateForDayOfWeek(dayOfWeek),
+        dayType: phaseDay?.day_type ?? "rest",
+        workoutName: phaseDay?.workout_name ?? null,
+        phaseDay,
+        isToday: dayOfWeek === todayDow,
+        isOverridden,
+      };
+    });
+  }, [allPhaseDays, currentWeekOverrides]);
+
+  // Resolve today's effective phase day
+  const todaySchedule = effectiveWeekSchedule.find(d => d.isToday);
+  const todayDay = todaySchedule?.phaseDay ?? (allPhaseDays?.find(d => d.day_of_week === dow) ?? null);
 
   const { data: activeSession } = useQuery({
     queryKey: ["active-session", user?.id],
