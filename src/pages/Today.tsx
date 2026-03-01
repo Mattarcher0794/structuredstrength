@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles } from "lucide-react";
+import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles, ArrowLeftRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback, useMemo } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -20,6 +20,7 @@ import {
   SheetTitle } from
 "@/components/ui/sheet";
 import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
+import { MoveWorkoutSheet } from "@/components/MoveWorkoutSheet";
 
 export interface EffectiveDaySchedule {
   dayOfWeek: number;
@@ -46,6 +47,7 @@ export default function Today() {
   const dow = getDayOfWeek();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exercisesOpen, setExercisesOpen] = useState(false);
+  const [moveSheetOpen, setMoveSheetOpen] = useState(false);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
