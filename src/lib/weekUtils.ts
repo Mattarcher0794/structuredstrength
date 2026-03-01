@@ -4,7 +4,16 @@
 export function getWeekStartDate(): string {
   const today = new Date();
   const day = today.getDay(); // 0=Sun, 1=Mon...
-  const diff = day === 0 ? -6 : 1 - day;
+
+  let diff: number;
+  if (day === 0) {
+    // Sunday — look ahead to upcoming Monday
+    diff = 1;
+  } else {
+    // Mon-Sat — go back to this week's Monday
+    diff = 1 - day;
+  }
+
   const monday = new Date(today);
   monday.setDate(today.getDate() + diff);
   return monday.toISOString().split("T")[0];

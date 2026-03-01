@@ -40,6 +40,10 @@ export function MoveWorkoutSheet({
 
   const availableDays = effectiveWeekSchedule.filter((d) => {
     if (d.isToday) return false;
+    // Only future days — strip time for date-only comparison
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (d.date <= todayStart) return false;
     const dateStr = format(d.date, "yyyy-MM-dd");
     if (completedDates.has(dateStr)) return false;
     return true;
