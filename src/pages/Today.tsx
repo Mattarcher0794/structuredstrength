@@ -21,6 +21,8 @@ import {
 "@/components/ui/sheet";
 import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
 import { MoveWorkoutSheet } from "@/components/MoveWorkoutSheet";
+import { WeekStrip } from "@/components/WeekStrip";
+import { DayPeekSheet } from "@/components/DayPeekSheet";
 
 export interface EffectiveDaySchedule {
   dayOfWeek: number;
@@ -48,6 +50,8 @@ export default function Today() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exercisesOpen, setExercisesOpen] = useState(false);
   const [moveSheetOpen, setMoveSheetOpen] = useState(false);
+  const [peekDay, setPeekDay] = useState<EffectiveDaySchedule | null>(null);
+  const [moveSourceDow, setMoveSourceDow] = useState<number | undefined>(undefined);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
