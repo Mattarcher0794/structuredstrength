@@ -58,6 +58,7 @@ export function MoveWorkoutSheet({
   const sourceDow = sourceDayOfWeek ?? getTodayDayOfWeek();
   const sourceDay = effectiveWeekSchedule.find(d => d.dayOfWeek === sourceDow);
   const sourceWorkoutName = sourceDay?.workoutName ?? todayWorkoutName;
+  const sourceDayTypeLabel = (sourceDay?.dayType ?? "strength").charAt(0).toUpperCase() + (sourceDay?.dayType ?? "strength").slice(1);
   const [confirmTarget, setConfirmTarget] = useState<EffectiveDaySchedule | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -196,7 +197,7 @@ export function MoveWorkoutSheet({
             <div className="space-y-4">
               <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
                 <p className="font-medium">
-                  Move {sourceWorkoutName || "workout"} to{" "}
+                  Move {sourceWorkoutName || sourceDayTypeLabel} to{" "}
                   {format(confirmTarget.date, "EEE d MMM")}?
                 </p>
                 <p className="text-muted-foreground text-xs">
