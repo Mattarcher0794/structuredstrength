@@ -754,6 +754,7 @@ export default function Today() {
           todayWorkoutName={todayDay?.workout_name || "Strength"}
           effectiveWeekSchedule={effectiveWeekSchedule}
           completedDates={weeklyCompletedDates}
+          currentWeekOverrides={currentWeekOverrides}
           sourceDayOfWeek={moveSourceDow}
         />
       )}
