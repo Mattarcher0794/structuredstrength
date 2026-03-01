@@ -32,11 +32,9 @@ export function getTodayDayOfWeek(): number {
  * in the current week.
  */
 export function getDateForDayOfWeek(dayOfWeek: number): Date {
-  const today = new Date();
-  const currentDow = today.getDay(); // 0=Sun
-  const currentIsoDow = currentDow === 0 ? 7 : currentDow;
-  const diff = dayOfWeek - currentIsoDow;
-  const result = new Date(today);
-  result.setDate(today.getDate() + diff);
+  const mondayStr = getWeekStartDate();
+  const monday = new Date(mondayStr + "T00:00:00");
+  const result = new Date(monday);
+  result.setDate(monday.getDate() + (dayOfWeek - 1));
   return result;
 }
