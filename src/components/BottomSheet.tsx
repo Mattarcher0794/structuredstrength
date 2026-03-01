@@ -10,7 +10,7 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -49,6 +49,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
