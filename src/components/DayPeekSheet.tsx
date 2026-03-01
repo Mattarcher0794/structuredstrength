@@ -18,7 +18,6 @@ interface Props {
   isCompleted: boolean;
   isPast: boolean;
   onMoveWorkout: (day: EffectiveDaySchedule) => void;
-  onMoveWorkoutHere: (day: EffectiveDaySchedule) => void;
 }
 
 export function DayPeekSheet({
@@ -28,7 +27,6 @@ export function DayPeekSheet({
   isCompleted,
   isPast,
   onMoveWorkout,
-  onMoveWorkoutHere,
 }: Props) {
   if (!day) return null;
 
@@ -115,19 +113,6 @@ export function DayPeekSheet({
             </Button>
           )}
 
-          {isFutureUncompleted && day.dayType === "rest" && (
-            <Button
-              variant="outline"
-              className="w-full rounded-2xl"
-              onClick={() => {
-                const capturedDay = day;
-                onOpenChange(false);
-                setTimeout(() => onMoveWorkoutHere(capturedDay), 50);
-              }}
-            >
-              Move a workout here
-            </Button>
-          )}
         </div>
       </DrawerContent>
     </Drawer>

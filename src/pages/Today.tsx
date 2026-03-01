@@ -581,12 +581,6 @@ export default function Today() {
           setMoveSourceDow(day.dayOfWeek);
           setMoveSheetOpen(true);
         }}
-        onMoveWorkoutHere={(day) => {
-          // For rest days, find a strength day to move here
-          // Open move sheet for the first available strength day targeting this rest day
-          setMoveSourceDow(undefined);
-          setMoveSheetOpen(true);
-        }}
       />
 
       {!activePhase ?
