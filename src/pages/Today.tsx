@@ -760,5 +760,3 @@ export default function Today() {
     </div>);
 
 }
-
-}
