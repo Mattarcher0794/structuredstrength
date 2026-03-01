@@ -106,8 +106,9 @@ export function DayPeekSheet({
               variant="outline"
               className="w-full rounded-2xl"
               onClick={() => {
+                const capturedDay = day;
                 onOpenChange(false);
-                onMoveWorkout(day);
+                setTimeout(() => onMoveWorkout(capturedDay), 50);
               }}
             >
               Move this workout
@@ -119,8 +120,9 @@ export function DayPeekSheet({
               variant="outline"
               className="w-full rounded-2xl"
               onClick={() => {
+                const capturedDay = day;
                 onOpenChange(false);
-                onMoveWorkoutHere(day);
+                setTimeout(() => onMoveWorkoutHere(capturedDay), 50);
               }}
             >
               Move a workout here
