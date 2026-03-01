@@ -31,6 +31,15 @@ export function getTodayDayOfWeek(): number {
 }
 
 /**
+ * Returns the Monday of the following week as a YYYY-MM-DD string.
+ */
+export function getNextWeekStartDate(): string {
+  const current = new Date(getWeekStartDate() + "T00:00:00");
+  current.setDate(current.getDate() + 7);
+  return current.toISOString().split("T")[0];
+}
+
+/**
  * Returns the calendar date for a given day_of_week (1=Mon..7=Sun)
  * in the current week.
  */
