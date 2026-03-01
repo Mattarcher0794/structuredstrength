@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles } from "lucide-react";
+import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles, ArrowLeftRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback, useMemo } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -20,6 +20,7 @@ import {
   SheetTitle } from
 "@/components/ui/sheet";
 import { getWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
+import { MoveWorkoutSheet } from "@/components/MoveWorkoutSheet";
 
 export interface EffectiveDaySchedule {
   dayOfWeek: number;
@@ -46,6 +47,7 @@ export default function Today() {
   const dow = getDayOfWeek();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exercisesOpen, setExercisesOpen] = useState(false);
+  const [moveSheetOpen, setMoveSheetOpen] = useState(false);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -74,6 +76,7 @@ export default function Today() {
       await queryClient.invalidateQueries({ queryKey: ["active-session"] });
       await queryClient.invalidateQueries({ queryKey: ["strength-days"] });
       await queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
+      await queryClient.invalidateQueries({ queryKey: ["weekly-completed-dates"] });
       await queryClient.invalidateQueries({ queryKey: ["nutrition-today"] });
       setIsRefreshing(false);
     }
@@ -232,6 +235,22 @@ export default function Today() {
   });
 
   const isCompletedToday = !!completedToday;
+
+  // Fetch completed session dates for the current week (for move workout sheet)
+  const { data: weeklyCompletedDates = new Set<string>() } = useQuery({
+    queryKey: ["weekly-completed-dates", user?.id, activePhase?.id, weekStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("date")
+        .eq("user_id", user!.id)
+        .eq("status", "completed")
+        .gte("date", weekStart)
+        .lte("date", weekEnd);
+      return new Set((data ?? []).map((d: any) => d.date));
+    },
+    enabled: !!user && !!activePhase,
+  });
 
   const plannedStrengthCount = strengthDays.length;
   const remainingCount = Math.max(plannedStrengthCount - weeklyCompletedCount, 0);
@@ -672,11 +691,30 @@ export default function Today() {
               </div>
 
               {isStrengthDay && !activeSession &&
-            <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
-                  Start workout
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-            }
+                <div className="space-y-3">
+                  <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
+                    Start workout
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                  <button
+                    onClick={() => setMoveSheetOpen(true)}
+                    className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                    Move workout
+                  </button>
+                </div>
+              }
+
+              <MoveWorkoutSheet
+                open={moveSheetOpen}
+                onOpenChange={setMoveSheetOpen}
+                activePhaseId={activePhase!.id}
+                userId={user!.id}
+                todayWorkoutName={todayDay?.workout_name || "Strength"}
+                effectiveWeekSchedule={effectiveWeekSchedule}
+                completedDates={weeklyCompletedDates}
+              />
             </>
           )}
         </div>
