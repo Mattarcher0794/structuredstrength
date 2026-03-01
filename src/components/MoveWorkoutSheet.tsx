@@ -42,16 +42,31 @@ export function MoveWorkoutSheet({
   const [confirmTarget, setConfirmTarget] = useState<EffectiveDaySchedule | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const availableDays = effectiveWeekSchedule.filter((d) => {
-    if (d.dayOfWeek === sourceDow) return false;
-    // Only future days
+  const availableDays = (() => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    if (d.date <= todayStart) return false;
-    const dateStr = format(d.date, "yyyy-MM-dd");
-    if (completedDates.has(dateStr)) return false;
-    return true;
-  });
+    const isSunday = todayStart.getDay() === 0;
+
+    // Determine the source day's week window (Mon–Sun)
+    const sourceDayDate = sourceDay?.date ?? todayStart;
+    const sourceWeekStartStr = getWeekStartDate(sourceDayDate);
+    const sourceWeekStart = new Date(sourceWeekStartStr + "T00:00:00");
+    const sourceWeekEnd = new Date(sourceWeekStart);
+    sourceWeekEnd.setDate(sourceWeekStart.getDate() + 6);
+
+    return effectiveWeekSchedule.filter((d) => {
+      if (d.dayOfWeek === sourceDow) return false;
+      // Only future days
+      if (d.date <= todayStart) return false;
+      const dateStr = format(d.date, "yyyy-MM-dd");
+      if (completedDates.has(dateStr)) return false;
+      // Must be within the same week as the source day
+      if (d.date < sourceWeekStart || d.date > sourceWeekEnd) return false;
+      // Exclude Sunday targets when today is Sunday
+      if (isSunday && d.date.getDay() === 0) return false;
+      return true;
+    });
+  })();
 
   const handleConfirm = async () => {
     if (!confirmTarget) return;
