@@ -136,7 +136,7 @@ export function MoveWorkoutSheet({
         <DrawerHeader className="text-left">
           <DrawerTitle>Move workout to…</DrawerTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Pick a day to move today's {todayWorkoutName || "workout"} to this week
+            Pick a day to move {sourceDayOfWeek ? `${["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][sourceDow]}'s` : "today's"} {sourceWorkoutName || "workout"} to this week
           </p>
         </DrawerHeader>
 
@@ -145,7 +145,7 @@ export function MoveWorkoutSheet({
             <div className="space-y-4">
               <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
                 <p className="font-medium">
-                  Move {todayWorkoutName || "workout"} to{" "}
+                  Move {sourceWorkoutName || "workout"} to{" "}
                   {format(confirmTarget.date, "EEE d MMM")}?
                 </p>
                 <p className="text-muted-foreground text-xs">
