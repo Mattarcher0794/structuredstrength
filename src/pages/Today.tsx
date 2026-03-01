@@ -52,6 +52,7 @@ export default function Today() {
   const [moveSheetOpen, setMoveSheetOpen] = useState(false);
   const [peekDay, setPeekDay] = useState<EffectiveDaySchedule | null>(null);
   const [moveSourceDow, setMoveSourceDow] = useState<number | undefined>(undefined);
+  const [moveSourceDate, setMoveSourceDate] = useState<Date | undefined>(undefined);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -579,6 +580,7 @@ export default function Today() {
         isPast={peekDay ? (() => {const t = new Date();t.setHours(0, 0, 0, 0);return peekDay.date < t;})() : false}
         onMoveWorkout={(day) => {
           setMoveSourceDow(day.dayOfWeek);
+          setMoveSourceDate(day.date);
           setMoveSheetOpen(true);
         }} />
 
@@ -724,7 +726,7 @@ export default function Today() {
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                   <button
-              onClick={() => {setMoveSourceDow(undefined);setMoveSheetOpen(true);}}
+              onClick={() => {setMoveSourceDow(undefined);setMoveSourceDate(undefined);setMoveSheetOpen(true);}}
               className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors">
 
                     <ArrowLeftRight className="h-3.5 w-3.5" />
@@ -747,9 +749,11 @@ export default function Today() {
         userId={user.id}
         todayWorkoutName={todayDay?.workout_name || ""}
         effectiveWeekSchedule={effectiveWeekSchedule}
+        allPhaseDays={allPhaseDays ?? undefined}
         completedDates={weeklyCompletedDates}
         currentWeekOverrides={currentWeekOverrides}
-        sourceDayOfWeek={moveSourceDow} />
+        sourceDayOfWeek={moveSourceDow}
+        sourceDayDate={moveSourceDate} />
 
       }
     </div>);
