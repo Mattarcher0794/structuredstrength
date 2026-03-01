@@ -87,25 +87,43 @@ export function MoveWorkoutSheet({
     try {
       const weekStart = getWeekStartDate();
       const targetDow = confirmTarget.dayOfWeek;
-      const isStrengthSwap = confirmTarget.dayType === "strength";
 
-      const rows: any[] = [
-        {
-          phase_id: activePhaseId,
-          user_id: userId,
-          week_start_date: weekStart,
-          original_day_of_week: sourceDow,
-          overridden_day_of_week: targetDow,
-        },
-      ];
+      const sourceIsStrength = sourceDay?.dayType === "strength";
+      const targetIsStrength = confirmTarget.dayType === "strength";
 
-      if (isStrengthSwap) {
+      const rows: any[] = [];
+
+      if (sourceIsStrength && targetIsStrength) {
+        // Scenario A — Strength ↔ Strength swap: two rows
+        const trueSourceDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
+        const trueTargetDow = resolveOriginalDow(targetDow, currentWeekOverrides);
+        rows.push(
+          {
+            phase_id: activePhaseId,
+            user_id: userId,
+            week_start_date: weekStart,
+            original_day_of_week: trueSourceDow,
+            overridden_day_of_week: targetDow,
+          },
+          {
+            phase_id: activePhaseId,
+            user_id: userId,
+            week_start_date: weekStart,
+            original_day_of_week: trueTargetDow,
+            overridden_day_of_week: sourceDow,
+          }
+        );
+      } else {
+        // Scenario B/C — Strength → Rest: one row only
+        const strengthDow = sourceIsStrength ? sourceDow : targetDow;
+        const restDow = sourceIsStrength ? targetDow : sourceDow;
+        const trueStrengthDow = resolveOriginalDow(strengthDow, currentWeekOverrides);
         rows.push({
           phase_id: activePhaseId,
           user_id: userId,
           week_start_date: weekStart,
-          original_day_of_week: targetDow,
-          overridden_day_of_week: sourceDow,
+          original_day_of_week: trueStrengthDow,
+          overridden_day_of_week: restDow,
         });
       }
 
@@ -119,6 +137,7 @@ export function MoveWorkoutSheet({
 
       toast.success(`Workout moved to ${format(confirmTarget.date, "EEE d MMM")}`);
 
+      // Re-fetch overrides to ensure next swap has correct state
       await queryClient.invalidateQueries({ queryKey: ["week-overrides"] });
       await queryClient.invalidateQueries({ queryKey: ["all-phase-days"] });
 
