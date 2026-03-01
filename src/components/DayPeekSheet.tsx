@@ -1,12 +1,7 @@
 import { format } from "date-fns";
 import { Check, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { BottomSheet } from "@/components/BottomSheet";
 import type { EffectiveDaySchedule } from "@/pages/Today";
 
 const DAY_LABELS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -59,62 +54,55 @@ export function DayPeekSheet({
     : null;
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="rounded-t-2xl">
-        <DrawerHeader className="text-left">
-          <DrawerTitle>{format(day.date, "EEEE, d MMMM")}</DrawerTitle>
-        </DrawerHeader>
-
-        <div className="px-4 pb-8 space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              {dayTypePill()}
-              {isCompleted && (
-                <span className="flex items-center gap-1 text-xs text-primary">
-                  <Check className="h-3 w-3" />
-                  Completed
-                </span>
-              )}
-              {isPast && !isCompleted && !day.isToday && day.dayType === "strength" && (
-                <span className="text-xs text-muted-foreground">Missed</span>
-              )}
-            </div>
-
-            {(day.dayType === "strength" || day.dayType === "cardio") && day.workoutName && (
-              <p className="text-lg font-display font-semibold">{day.workoutName}</p>
+    <BottomSheet isOpen={open} onClose={() => onOpenChange(false)} title={format(day.date, "EEEE, d MMMM")}>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {dayTypePill()}
+            {isCompleted && (
+              <span className="flex items-center gap-1 text-xs text-primary">
+                <Check className="h-3 w-3" />
+                Completed
+              </span>
             )}
-
-            {(day.dayType === "strength" || day.dayType === "cardio") && exerciseCount > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""}
-              </p>
-            )}
-
-            {overrideNote && (
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <CalendarClock className="h-3 w-3" />
-                {overrideNote}
-              </p>
+            {isPast && !isCompleted && !day.isToday && day.dayType === "strength" && (
+              <span className="text-xs text-muted-foreground">Missed</span>
             )}
           </div>
 
-          {/* Actions for future uncompleted days */}
-          {isFutureUncompleted && (day.dayType === "strength" || day.dayType === "cardio") && (
-            <Button
-              variant="outline"
-              className="w-full rounded-2xl"
-              onClick={() => {
-                const capturedDay = day;
-                onOpenChange(false);
-                setTimeout(() => onMoveWorkout(capturedDay), 50);
-              }}
-            >
-              Move this workout
-            </Button>
+          {(day.dayType === "strength" || day.dayType === "cardio") && day.workoutName && (
+            <p className="text-lg font-display font-semibold">{day.workoutName}</p>
           )}
 
+          {(day.dayType === "strength" || day.dayType === "cardio") && exerciseCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""}
+            </p>
+          )}
+
+          {overrideNote && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarClock className="h-3 w-3" />
+              {overrideNote}
+            </p>
+          )}
         </div>
-      </DrawerContent>
-    </Drawer>
+
+        {/* Actions for future uncompleted days */}
+        {isFutureUncompleted && (day.dayType === "strength" || day.dayType === "cardio") && (
+          <Button
+            variant="outline"
+            className="w-full rounded-2xl"
+            onClick={() => {
+              const capturedDay = day;
+              onOpenChange(false);
+              setTimeout(() => onMoveWorkout(capturedDay), 50);
+            }}
+          >
+            Move this workout
+          </Button>
+        )}
+      </div>
+    </BottomSheet>
   );
 }

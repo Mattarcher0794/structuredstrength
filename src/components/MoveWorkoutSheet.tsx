@@ -2,12 +2,7 @@ import { useState, useMemo } from "react";
 import { format, isToday } from "date-fns";
 import { ArrowLeftRight, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { BottomSheet } from "@/components/BottomSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -242,79 +237,74 @@ export function MoveWorkoutSheet({
   };
 
   return (
-    <Drawer open={open} onOpenChange={handleClose}>
-      <DrawerContent className="rounded-t-2xl">
-        <DrawerHeader className="text-left">
-          <DrawerTitle>Move workout to…</DrawerTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Pick a day to move {getDayDisplayName(sourceDay?.date)}'s {sourceWorkoutName || "workout"} to this week
-          </p>
-        </DrawerHeader>
+    <BottomSheet isOpen={open} onClose={() => handleClose(false)} title="Move workout to…">
+      <p className="text-sm text-muted-foreground -mt-3 mb-4 text-center">
+        Pick a day to move {getDayDisplayName(sourceDay?.date)}'s {sourceWorkoutName || "workout"} to this week
+      </p>
 
-        <div className="px-4 pb-8 space-y-2">
-          {confirmTarget ? (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
-                <p className="font-medium">
-                  Move {sourceWorkoutName || sourceDayTypeLabel} to{" "}
-                  {format(confirmTarget.date, "EEE d MMM")}?
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {["strength", "cardio"].includes(confirmTarget.dayType)
-                    ? `${confirmTarget.workoutName || (confirmTarget.dayType === "cardio" ? "Cardio" : "Strength")} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
-                    : `${getDayDisplayName(sourceDay?.date, true)} will become a rest day.`}
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="ghost"
-                  className="flex-1 rounded-2xl"
-                  onClick={() => setConfirmTarget(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="flex-1 rounded-2xl"
-                  onClick={handleConfirm}
-                  disabled={saving}
-                >
-                  {saving ? "Moving…" : "Confirm"}
-                </Button>
-              </div>
+      <div className="space-y-2">
+        {confirmTarget ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
+              <p className="font-medium">
+                Move {sourceWorkoutName || sourceDayTypeLabel} to{" "}
+                {format(confirmTarget.date, "EEE d MMM")}?
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {["strength", "cardio"].includes(confirmTarget.dayType)
+                  ? `${confirmTarget.workoutName || (confirmTarget.dayType === "cardio" ? "Cardio" : "Strength")} will move to ${getDayDisplayName(sourceDay?.date)} instead.`
+                  : `${getDayDisplayName(sourceDay?.date, true)} will become a rest day.`}
+              </p>
             </div>
-          ) : availableDays.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No available days to swap with this week.
-            </p>
-          ) : (
-            availableDays.map((day) => (
-              <button
-                key={day.dayOfWeek}
-                onClick={() => setConfirmTarget(day)}
-                className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors min-h-[44px]"
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                className="flex-1 rounded-2xl"
+                onClick={() => setConfirmTarget(null)}
               >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">
-                      {format(day.date, "EEE d MMM")}
-                    </p>
-                    {dayTypePill(day.dayType)}
-                    {day.isOverridden && (
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <CalendarClock className="h-3 w-3" />
-                        Rescheduled
-                      </span>
-                    )}
-                  </div>
-                  {(day.dayType === "strength" || day.dayType === "cardio") && day.workoutName && (
-                    <p className="text-xs text-muted-foreground">{day.workoutName}</p>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 rounded-2xl"
+                onClick={handleConfirm}
+                disabled={saving}
+              >
+                {saving ? "Moving…" : "Confirm"}
+              </Button>
+            </div>
+          </div>
+        ) : availableDays.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No available days to swap with this week.
+          </p>
+        ) : (
+          availableDays.map((day) => (
+            <button
+              key={day.dayOfWeek}
+              onClick={() => setConfirmTarget(day)}
+              className="flex w-full items-center justify-between rounded-xl bg-muted/50 px-4 py-3 text-left hover:bg-muted transition-colors min-h-[44px]"
+            >
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">
+                    {format(day.date, "EEE d MMM")}
+                  </p>
+                  {dayTypePill(day.dayType)}
+                  {day.isOverridden && (
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <CalendarClock className="h-3 w-3" />
+                      Rescheduled
+                    </span>
                   )}
                 </div>
-              </button>
-            ))
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
+                {(day.dayType === "strength" || day.dayType === "cardio") && day.workoutName && (
+                  <p className="text-xs text-muted-foreground">{day.workoutName}</p>
+                )}
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </BottomSheet>
   );
 }
