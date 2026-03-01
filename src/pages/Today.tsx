@@ -235,6 +235,22 @@ export default function Today() {
 
   const isCompletedToday = !!completedToday;
 
+  // Fetch completed session dates for the current week (for move workout sheet)
+  const { data: weeklyCompletedDates = new Set<string>() } = useQuery({
+    queryKey: ["weekly-completed-dates", user?.id, activePhase?.id, weekStart],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("date")
+        .eq("user_id", user!.id)
+        .eq("status", "completed")
+        .gte("date", weekStart)
+        .lte("date", weekEnd);
+      return new Set((data ?? []).map((d: any) => d.date));
+    },
+    enabled: !!user && !!activePhase,
+  });
+
   const plannedStrengthCount = strengthDays.length;
   const remainingCount = Math.max(plannedStrengthCount - weeklyCompletedCount, 0);
 
