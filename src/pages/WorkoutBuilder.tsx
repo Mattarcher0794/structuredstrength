@@ -102,47 +102,18 @@ export default function WorkoutBuilder() {
       </div>
 
       {/* Current exercises */}
-      <div className="space-y-2 mb-6">
+      <div className="space-y-3 mb-6">
         {dayExercises.map((pde: any) => (
-          <div key={pde.id} className="rounded-2xl bg-card border border-border p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <GripVertical className="h-4 w-4 text-muted-foreground/30" />
-              <span className="flex-1 text-sm font-medium">{pde.exercises?.name}</span>
-              <button onClick={() => removeExercise.mutate(pde.id)}>
-                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-              </button>
-            </div>
-            <div className="flex gap-2 ml-6">
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-muted-foreground uppercase">Sets</span>
-                <Input
-                  type="number"
-                  min="1"
-                  value={pde.num_sets}
-                  onChange={(e) => updateExercise.mutate({ pdeId: pde.id, field: "num_sets", value: parseInt(e.target.value) || 1 })}
-                  className="h-7 w-14 rounded-lg text-center text-xs"
-                />
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-muted-foreground uppercase">Reps</span>
-                <Input
-                  type="number"
-                  min="1"
-                  value={pde.min_reps}
-                  onChange={(e) => updateExercise.mutate({ pdeId: pde.id, field: "min_reps", value: parseInt(e.target.value) || 1 })}
-                  className="h-7 w-14 rounded-lg text-center text-xs"
-                />
-                <span className="text-muted-foreground text-xs">–</span>
-                <Input
-                  type="number"
-                  min="1"
-                  value={pde.max_reps}
-                  onChange={(e) => updateExercise.mutate({ pdeId: pde.id, field: "max_reps", value: parseInt(e.target.value) || 1 })}
-                  className="h-7 w-14 rounded-lg text-center text-xs"
-                />
-              </div>
-            </div>
-          </div>
+          <ExerciseConfigCard
+            key={pde.id}
+            id={pde.id}
+            name={pde.exercises?.name ?? ""}
+            numSets={pde.num_sets}
+            minReps={pde.min_reps}
+            maxReps={pde.max_reps}
+            onRemove={(pdeId) => removeExercise.mutate(pdeId)}
+            onUpdate={(pdeId, field, value) => updateExercise.mutate({ pdeId, field, value })}
+          />
         ))}
       </div>
 
