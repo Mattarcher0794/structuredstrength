@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react";
 import ExerciseSearch from "@/components/ExerciseSearch";
+import ExerciseConfigCard from "@/components/ExerciseConfigCard";
 
 export default function WorkoutBuilder() {
   const { phaseId, dayId } = useParams<{ phaseId: string; dayId: string }>();
