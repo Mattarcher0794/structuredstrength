@@ -690,11 +690,30 @@ export default function Today() {
               </div>
 
               {isStrengthDay && !activeSession &&
-            <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
-                  Start workout
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-            }
+                <div className="space-y-3">
+                  <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
+                    Start workout
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                  <button
+                    onClick={() => setMoveSheetOpen(true)}
+                    className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                    Move workout
+                  </button>
+                </div>
+              }
+
+              <MoveWorkoutSheet
+                open={moveSheetOpen}
+                onOpenChange={setMoveSheetOpen}
+                activePhaseId={activePhase!.id}
+                userId={user!.id}
+                todayWorkoutName={todayDay?.workout_name || "Strength"}
+                effectiveWeekSchedule={effectiveWeekSchedule}
+                completedDates={weeklyCompletedDates}
+              />
             </>
           )}
         </div>
