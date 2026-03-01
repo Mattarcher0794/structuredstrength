@@ -745,7 +745,7 @@ export default function Today() {
           onOpenChange={setMoveSheetOpen}
           activePhaseId={activePhase.id}
           userId={user.id}
-          todayWorkoutName={todayDay?.workout_name || "Strength"}
+          todayWorkoutName={todayDay?.workout_name || ""}
           effectiveWeekSchedule={effectiveWeekSchedule}
           completedDates={weeklyCompletedDates}
           currentWeekOverrides={currentWeekOverrides}
