@@ -14,6 +14,16 @@ import { toast } from "sonner";
 import { getWeekStartDate, getTodayDayOfWeek } from "@/lib/weekUtils";
 import type { EffectiveDaySchedule } from "@/pages/Today";
 
+/** Trace back through overrides to find the original phase-template day_of_week */
+function resolveOriginalDow(
+  effectiveDow: number,
+  overrides: { original_day_of_week: number; overridden_day_of_week: number }[]
+): number {
+  const inbound = overrides.find(o => o.overridden_day_of_week === effectiveDow);
+  if (inbound) return inbound.original_day_of_week;
+  return effectiveDow;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,6 +32,7 @@ interface Props {
   todayWorkoutName: string;
   effectiveWeekSchedule: EffectiveDaySchedule[];
   completedDates: Set<string>;
+  currentWeekOverrides?: { original_day_of_week: number; overridden_day_of_week: number }[];
   sourceDayOfWeek?: number; // when initiated from calendar strip instead of today
 }
 
@@ -33,6 +44,7 @@ export function MoveWorkoutSheet({
   todayWorkoutName,
   effectiveWeekSchedule,
   completedDates,
+  currentWeekOverrides = [],
   sourceDayOfWeek,
 }: Props) {
   const queryClient = useQueryClient();
@@ -75,25 +87,43 @@ export function MoveWorkoutSheet({
     try {
       const weekStart = getWeekStartDate();
       const targetDow = confirmTarget.dayOfWeek;
-      const isStrengthSwap = confirmTarget.dayType === "strength";
 
-      const rows: any[] = [
-        {
-          phase_id: activePhaseId,
-          user_id: userId,
-          week_start_date: weekStart,
-          original_day_of_week: sourceDow,
-          overridden_day_of_week: targetDow,
-        },
-      ];
+      const sourceIsStrength = sourceDay?.dayType === "strength";
+      const targetIsStrength = confirmTarget.dayType === "strength";
 
-      if (isStrengthSwap) {
+      const rows: any[] = [];
+
+      if (sourceIsStrength && targetIsStrength) {
+        // Scenario A — Strength ↔ Strength swap: two rows
+        const trueSourceDow = resolveOriginalDow(sourceDow, currentWeekOverrides);
+        const trueTargetDow = resolveOriginalDow(targetDow, currentWeekOverrides);
+        rows.push(
+          {
+            phase_id: activePhaseId,
+            user_id: userId,
+            week_start_date: weekStart,
+            original_day_of_week: trueSourceDow,
+            overridden_day_of_week: targetDow,
+          },
+          {
+            phase_id: activePhaseId,
+            user_id: userId,
+            week_start_date: weekStart,
+            original_day_of_week: trueTargetDow,
+            overridden_day_of_week: sourceDow,
+          }
+        );
+      } else {
+        // Scenario B/C — Strength → Rest: one row only
+        const strengthDow = sourceIsStrength ? sourceDow : targetDow;
+        const restDow = sourceIsStrength ? targetDow : sourceDow;
+        const trueStrengthDow = resolveOriginalDow(strengthDow, currentWeekOverrides);
         rows.push({
           phase_id: activePhaseId,
           user_id: userId,
           week_start_date: weekStart,
-          original_day_of_week: targetDow,
-          overridden_day_of_week: sourceDow,
+          original_day_of_week: trueStrengthDow,
+          overridden_day_of_week: restDow,
         });
       }
 
@@ -107,6 +137,7 @@ export function MoveWorkoutSheet({
 
       toast.success(`Workout moved to ${format(confirmTarget.date, "EEE d MMM")}`);
 
+      // Re-fetch overrides to ensure next swap has correct state
       await queryClient.invalidateQueries({ queryKey: ["week-overrides"] });
       await queryClient.invalidateQueries({ queryKey: ["all-phase-days"] });
 
