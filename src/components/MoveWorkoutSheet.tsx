@@ -137,7 +137,7 @@ export function MoveWorkoutSheet({
 
     return sourceWeekSchedule.filter((d) => {
       if (d.dayOfWeek === sourceDow) return false;
-      if (d.date <= todayStart) return false;
+      if (d.date < todayStart) return false;
       const dateStr = format(d.date, "yyyy-MM-dd");
       if (completedDates.has(dateStr)) return false;
       if (d.date < sourceWeekMonday || d.date > sourceWeekSunday) return false;
