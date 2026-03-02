@@ -588,9 +588,16 @@ function ActiveExerciseCard({
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
+              enterKeyHint="next"
               placeholder="reps"
               value={reps}
               onChange={(e) => setReps(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  weightInputRef.current?.focus();
+                }
+              }}
               className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
               style={{ fontSize: "20px" }}
             />
@@ -600,10 +607,20 @@ function ActiveExerciseCard({
               type="text"
               inputMode="decimal"
               pattern="[0-9]*\.?[0-9]*"
+              enterKeyHint="done"
               placeholder="kg"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               onFocus={() => weightInputRef.current?.select()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (reps) {
+                    onLogSet(nextSet, reps, weight);
+                    setReps("");
+                  }
+                }
+              }}
               className="h-12 flex-1 rounded-xl text-center text-[16px] leading-tight"
               style={{ fontSize: "20px" }}
             />
