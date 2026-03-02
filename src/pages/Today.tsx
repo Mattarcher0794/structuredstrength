@@ -265,6 +265,7 @@ export default function Today() {
       from("workout_sessions").
       select("date").
       eq("user_id", user!.id).
+      eq("phase_id", activePhase!.id).
       eq("status", "completed").
       gte("date", weekStart).
       lte("date", weekEnd);
@@ -665,7 +666,7 @@ export default function Today() {
               size="lg"
               disabled={isLoggingCardio}
               onClick={logCardio}>
-              {isLoggingCardio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+              {isLoggingCardio && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               I did it
             </Button>
           </>
