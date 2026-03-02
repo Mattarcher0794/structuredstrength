@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles, ArrowLeftRight } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -272,8 +273,9 @@ export default function Today() {
     enabled: !!user && !!activePhase
   });
 
-  const plannedStrengthCount = strengthDays.length;
-  const remainingCount = Math.max(plannedStrengthCount - weeklyCompletedCount, 0);
+  const plannedSessionCount = allPhaseDays?.filter(d => d.day_type === "strength" || d.day_type === "cardio").length ?? 0;
+  const remainingCount = Math.max(plannedSessionCount - weeklyCompletedCount, 0);
+  const sessionWord = (n: number) => n === 1 ? "session" : "sessions";
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -333,7 +335,37 @@ export default function Today() {
   };
 
   const isStrengthDay = todayDay?.day_type === "strength";
+  const isCardioDay = todayDay?.day_type === "cardio";
   const exerciseCount = todayDay?.phase_day_exercises?.length ?? 0;
+  const [isLoggingCardio, setIsLoggingCardio] = useState(false);
+
+  const logCardio = async () => {
+    if (!activePhase || !todayDay || !user) return;
+    setIsLoggingCardio(true);
+    try {
+      const now = new Date().toISOString();
+      await supabase.from("workout_sessions").insert({
+        user_id: user.id,
+        phase_id: activePhase.id,
+        phase_day_id: todayDay.id,
+        date: format(today, "yyyy-MM-dd"),
+        scheduled_day_type: "cardio",
+        is_schedule_override: false,
+        started_at: now,
+        completed_at: now,
+        status: "completed",
+      });
+      toast("Cardio logged 💪");
+      queryClient.invalidateQueries({ queryKey: ["completed-today"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-completed-dates"] });
+    } catch (e) {
+      console.error("Failed to log cardio:", e);
+      toast("Something went wrong");
+    } finally {
+      setIsLoggingCardio(false);
+    }
+  };
 
   // Phase week progress
   const currentWeek = activePhase?.start_date ?
@@ -556,20 +588,20 @@ export default function Today() {
       <div className="mb-6 rounded-2xl bg-card border border-border p-5">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">This week</p>
           <p className="text-sm font-medium">
-            {weeklyCompletedCount <= plannedStrengthCount ?
-          `${weeklyCompletedCount} of ${plannedStrengthCount} sessions complete` :
-          `${weeklyCompletedCount} sessions complete`}
+            {weeklyCompletedCount <= plannedSessionCount ?
+          `${weeklyCompletedCount} of ${plannedSessionCount} ${sessionWord(plannedSessionCount)} complete` :
+          `${weeklyCompletedCount} ${sessionWord(weeklyCompletedCount)} complete`}
           </p>
-          {plannedStrengthCount > 0 &&
+          {plannedSessionCount > 0 &&
         <Progress
-          value={Math.min(weeklyCompletedCount / plannedStrengthCount * 100, 100)}
+          value={Math.min(weeklyCompletedCount / plannedSessionCount * 100, 100)}
           className="mt-3 h-[7px] rounded-full bg-muted [&>div]:bg-rose-300/70 [&>div]:rounded-full" />
 
         }
           <p className="mt-2 text-xs text-muted-foreground">
-            {weeklyCompletedCount < plannedStrengthCount ?
-          `${remainingCount} sessions left this week` :
-          weeklyCompletedCount === plannedStrengthCount ?
+            {weeklyCompletedCount < plannedSessionCount ?
+          `${remainingCount} ${sessionWord(remainingCount)} left this week` :
+          weeklyCompletedCount === plannedSessionCount ?
           "You've completed all planned sessions this week" :
           "You've gone beyond your plan this week"}
           </p>
@@ -606,32 +638,57 @@ export default function Today() {
       <div className="rounded-2xl bg-card border border-border p-8 text-center">
           <CalendarHeart className="text-sm text-muted-foreground">No workout scheduled for today in your current phase.</CalendarHeart>
         </div> :
-      todayDay.day_type === "rest" || todayDay.day_type === "cardio" ?
+      todayDay.day_type === "cardio" ?
+      <div className="space-y-4">
+          {isCompletedToday ?
+          <div className="rounded-2xl bg-card/70 border border-border/50 p-8 text-center">
+            <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+            <WeekProgressBar />
+            <CalendarHeart className="mx-auto mb-3 mt-4 h-8 w-8 text-muted-foreground/40" />
+            <h2 className="text-lg font-display text-muted-foreground mb-2">Cardio day</h2>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <Check className="h-3.5 w-3.5" style={{ color: "hsl(var(--primary) / 0.7)" }} />
+              Completed today
+            </div>
+          </div> :
+          <>
+            <div className="rounded-2xl bg-card border border-border p-8 text-center">
+              <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
+              <WeekProgressBar />
+              <CalendarHeart className="mx-auto mb-3 mt-4 h-8 w-8 text-muted-foreground/40" />
+              <h2 className="text-lg font-display font-semibold mb-2">Cardio day</h2>
+              <p className="text-sm text-muted-foreground">Get moving however feels good today.</p>
+            </div>
+            <Button
+              variant="secondary"
+              className="w-full rounded-2xl py-6 text-base font-medium"
+              size="lg"
+              disabled={isLoggingCardio}
+              onClick={logCardio}>
+              {isLoggingCardio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+              I did it
+            </Button>
+          </>
+          }
+        </div> :
+
+      todayDay.day_type === "rest" ?
       <div className="space-y-4">
           <div className="rounded-2xl bg-card border border-border p-8 text-center">
             <p className="text-xs font-medium text-primary uppercase tracking-wider">{activePhase.name}</p>
             <WeekProgressBar />
             <CalendarHeart className="mx-auto mb-3 mt-4 h-8 w-8 text-muted-foreground/40" />
-            <h2 className="text-lg font-display font-semibold mb-2">
-              {todayDay.day_type === "rest" ? "Rest day" : "Cardio day"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {todayDay.day_type === "rest" ?
-            "Rest is part of the plan — you can still train if you want." :
-            "Get moving however feels good today."}
-            </p>
+            <h2 className="text-lg font-display font-semibold mb-2">Rest day</h2>
+            <p className="text-sm text-muted-foreground">Rest is part of the plan — you can still train if you want.</p>
           </div>
 
           {!activeSession &&
         <div className="rounded-2xl bg-card border border-border p-5">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">TRAIN ANYWAY
-
-          </p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">TRAIN ANYWAY</p>
               <Button
             variant="outline"
             className="w-full rounded-2xl"
             onClick={() => setSheetOpen(true)}>
-
                 <Zap className="mr-2 h-4 w-4" />
                 Choose a workout
               </Button>
@@ -726,7 +783,7 @@ export default function Today() {
                 </div>
               </div>
 
-              {(isStrengthDay || todayDay?.day_type === "cardio") && !activeSession &&
+              {isStrengthDay && !activeSession &&
           <div className="space-y-3">
                   <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
                     Start workout
