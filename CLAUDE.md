@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2026-03-05
+> Last updated: 2026-03-07
 > Keep this doc updated after every session that changes schema, adds components, ships pending work, or deploys Edge Functions. This is the single source of truth passed between Claude instances.
 
 ---
@@ -47,6 +47,8 @@ Responses must be: structured, technical, precise, concise, no fluff, risks flag
 
 Edge Function changes require: version bump + System Status update + changelog entry.
 Versioning: additive = minor, bugfix = patch, API contract change = major.
+
+After every committed feature or fix, update CHANGELOG.md with a new row (most recent first) and update the "Most recent change" row and "Last updated" date in CLAUDE.md. Only do this after the code has been committed — never mid-task.
 
 ---
 
@@ -331,7 +333,7 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 ---
 
 ## CHANGELOG
-| Date | Branch/PR | File | Change |
-|---|---|---|---|
-| 2026-03-05 | PR #1 | BottomNav.tsx | Smoke test: renamed History tab to Log (reverted) |
-| 2026-03-05 | PR #2 | .gitignore | Added .env and .env.* to gitignore |
+Full history: see CHANGELOG.md in repo root.
+
+Most recent change:
+| 2026-03-07 | feat/previous-session-history-strip | ActiveWorkout.tsx | Added previous session history strip to ActiveExerciseCard |
