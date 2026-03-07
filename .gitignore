@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor
+ios/App/Pods/
+ios/.xcode.env.local
