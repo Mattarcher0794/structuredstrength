@@ -336,4 +336,4 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-03-07 | feat/previous-session-history-strip | ActiveWorkout.tsx | Added previous session history strip to ActiveExerciseCard |
+| 2026-03-07 | feat/capacitor-ios | capacitor.config.ts, vite.config.ts, ios/ | Added Capacitor iOS native wrapper |
