@@ -6,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ExerciseSearch from "@/components/ExerciseSearch";
 
@@ -507,6 +507,7 @@ function ActiveExerciseCard({
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
@@ -524,6 +525,29 @@ function ActiveExerciseCard({
         .limit(1)
         .maybeSingle();
       return data?.weight ?? null;
+    },
+  });
+
+  // Fetch all sets from the most recent previous session for this exercise
+  const { data: prevSets = [] } = useQuery({
+    queryKey: ["prev-session-sets", exerciseId, sessionId],
+    queryFn: async () => {
+      const { data: latest } = await supabase
+        .from("session_sets")
+        .select("workout_session_id")
+        .eq("exercise_id", exerciseId)
+        .neq("workout_session_id", sessionId)
+        .order("completed_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!latest) return [];
+      const { data: sets } = await supabase
+        .from("session_sets")
+        .select("set_number, reps, weight")
+        .eq("workout_session_id", latest.workout_session_id)
+        .eq("exercise_id", exerciseId)
+        .order("set_number", { ascending: true });
+      return sets ?? [];
     },
   });
 
@@ -553,10 +577,42 @@ function ActiveExerciseCard({
       </div>
 
       {/* Prescription */}
-      <p className="text-xs text-muted-foreground mb-3">
+      <p className={cn("text-xs text-muted-foreground", prevSets.length > 0 ? "mb-1" : "mb-3")}>
         {numSets} sets × {minReps}{maxReps !== minReps ? `–${maxReps}` : ""} reps
         {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
       </p>
+
+      {/* Previous session history strip */}
+      {prevSets.length > 0 && (
+        <div className="mb-3">
+          <button
+            onClick={() => setHistoryExpanded(v => !v)}
+            className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
+          >
+            Last time
+            {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+          <AnimatePresence initial={false}>
+            {historyExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <ul className="space-y-0.5 mt-1">
+                  {prevSets.map((s: any) => (
+                    <li key={s.set_number} className="text-xs text-muted-foreground">
+                      Set {s.set_number}: {s.reps} reps × {s.weight}kg
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Completed sets as pills */}
       {completedSets.length > 0 && (
