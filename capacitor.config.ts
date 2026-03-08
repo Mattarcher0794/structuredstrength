@@ -6,9 +6,14 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    allowNavigation: [
-      '*.supabase.co',
-    ],
+    iosScheme: 'https',
+    hostname: 'localhost',
+    allowNavigation: ['*.supabase.co'],
+  },
+  plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    },
   },
 };
 
