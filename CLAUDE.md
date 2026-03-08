@@ -342,8 +342,19 @@ Fetch requests from `capacitor://localhost` to HTTPS endpoints fail with "Load f
 **ATS (App Transport Security)**
 `Info.plist` has no `NSAppTransportSecurity` block — this means default ATS applies (HTTPS required). Supabase satisfies default ATS. Do not add `NSAllowsArbitraryLoads: true` for production. If a domain-specific exception is needed, use `NSExceptionDomains` with `NSAllowsArbitraryLoads: false`.
 
-**Auth is working via CapacitorHttp**
-`supabase.auth.signInWithPassword()` routes through native URLSession. Session persistence uses the default localStorage-based storage (no custom adapter needed — `@capacitor/preferences` adapter was explored and reverted). The standard `client.ts` with no storage override works correctly.
+**Auth NOT yet confirmed end-to-end — blocked by Netskope on dev machine**
+CapacitorHttp is correctly configured and routes `fetch()` through native iOS URLSession. However, auth has not been confirmed working because the dev MacBook has Netskope MDM installed. The iOS simulator shares the Mac's network stack, so Netskope intercepts URLSession traffic from the simulator the same as from a physical device connected to the same machine. No auth requests appear in Supabase logs from either the simulator or the physical device when run from this Mac.
+
+Session persistence uses the default localStorage-based storage (no custom adapter needed — `@capacitor/preferences` adapter was explored and reverted). The standard `client.ts` with no storage override is correct.
+
+**TLS failure caused by Netskope (affects simulator AND physical device on this Mac)**
+Auth fails with `NSURLErrorDomain / A TLS error caused the secure connection to fail.` The cert chain shows Supabase's cert issued by `ca.and-digital.eu.goskope.com` → `caadmin.netskope.com`. Netskope is installed at OS/MDM level on the MacBook and intercepts all outbound TLS regardless of network or device — including the iOS simulator's URLSession calls.
+
+This is **not a code bug**. CapacitorHttp is correctly configured. Auth is expected to work on any device not running through a Netskope-managed Mac.
+
+**Dev workaround:** Test iOS auth on Victoria's device (UID: 8a03ac53-82a2-49de-a59e-ea68c1c312a8) or a personal iPhone connected to Xcode — not via this Mac's simulator. Alternatively, test the web PWA build in a browser to validate auth logic independently of Capacitor.
+
+IT path: request Netskope policy exception for the Supabase project URL — low priority given consumer users are unaffected.
 
 **`@capacitor/preferences` is installed but not used**
 The package is in `package.json` and registered as `PreferencesPlugin` in `ios/App/App/capacitor.config.json`. It was added during debugging and not removed from deps. It is not referenced in any app code.
@@ -356,6 +367,7 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 - Sunday excluded as swap target when today is Sunday
 - Lovable preview env vars not yet migrated to Lovable settings (currently relying on committed .env)
 - `@capacitor/preferences` in package.json is unused — can be removed when convenient
+- Capacitor iOS auth untestable on work-managed Mac — Netskope MDM intercepts TLS from both the iOS simulator and physical devices tethered to this Mac. Use Victoria's device or a personal iPhone (not via this Mac's Xcode) to validate iOS auth end-to-end
 
 ---
 
