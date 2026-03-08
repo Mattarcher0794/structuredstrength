@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2026-03-07
+> Last updated: 2026-03-08
 > Keep this doc updated after every session that changes schema, adds components, ships pending work, or deploys Edge Functions. This is the single source of truth passed between Claude instances.
 
 ---
@@ -320,7 +320,33 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 6. Error states audit
 7. Empty states audit
 8. Stabilise env var setup — move to Lovable project settings, create .env.example
-9. HealthKit/Capacitor planning for future native build
+9. HealthKit integration planning (Capacitor iOS wrapper is now live — see CAPACITOR iOS section)
+
+---
+
+## CAPACITOR iOS
+
+The app has a Capacitor iOS native wrapper (`ios/` folder). Key facts for any future work:
+
+**How the iOS app works**
+- `capacitor.config.ts` is the source of truth. Run `npx cap sync ios` after any change to it or after `bun run build`.
+- Web assets are synced to `ios/App/App/public/`. After any `bun run build`, always run `npx cap sync ios`, then do a Clean Build Folder (Shift+Cmd+K) in Xcode before running.
+- The app uses Swift Package Manager (SPM), not CocoaPods — there is no Podfile.
+
+**`iosScheme` does NOT work**
+`iosScheme: 'https'` in `capacitor.config.ts` is silently rejected at runtime by `CAPInstanceDescriptor.normalize()` in `@capacitor/ios`. The validation only accepts custom schemes — standard schemes like `https` are explicitly blocked and reset to `"capacitor"`. The app **always** runs at `capacitor://localhost` on iOS regardless of this setting. Do not waste time trying `iosScheme` variants.
+
+**The networking fix: CapacitorHttp**
+Fetch requests from `capacitor://localhost` to HTTPS endpoints fail with "Load failed" in WKWebView (cross-origin restriction). The fix is `CapacitorHttp: { enabled: true }` in `capacitor.config.ts` (already set). This patches `fetch()` and `XMLHttpRequest` to route through native iOS URLSession instead of WKWebView, bypassing the restriction. No new packages needed — built into `@capacitor/core` v4+.
+
+**ATS (App Transport Security)**
+`Info.plist` has no `NSAppTransportSecurity` block — this means default ATS applies (HTTPS required). Supabase satisfies default ATS. Do not add `NSAllowsArbitraryLoads: true` for production. If a domain-specific exception is needed, use `NSExceptionDomains` with `NSAllowsArbitraryLoads: false`.
+
+**Auth is working via CapacitorHttp**
+`supabase.auth.signInWithPassword()` routes through native URLSession. Session persistence uses the default localStorage-based storage (no custom adapter needed — `@capacitor/preferences` adapter was explored and reverted). The standard `client.ts` with no storage override works correctly.
+
+**`@capacitor/preferences` is installed but not used**
+The package is in `package.json` and registered as `PreferencesPlugin` in `ios/App/App/capacitor.config.json`. It was added during debugging and not removed from deps. It is not referenced in any app code.
 
 ---
 
@@ -329,6 +355,7 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 - "Train anyway" and override mechanic are two separate systems (consolidation deferred)
 - Sunday excluded as swap target when today is Sunday
 - Lovable preview env vars not yet migrated to Lovable settings (currently relying on committed .env)
+- `@capacitor/preferences` in package.json is unused — can be removed when convenient
 
 ---
 
@@ -336,4 +363,6 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
+| 2026-03-08 | fix/capacitor-ios-auth | capacitor.config.ts, ios/App/App/Info.plist | Fixed Capacitor iOS networking — enabled CapacitorHttp to route fetch through native URLSession |
+
 | 2026-03-07 | feat/capacitor-ios | capacitor.config.ts, vite.config.ts, ios/ | Added Capacitor iOS native wrapper |
