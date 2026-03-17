@@ -109,14 +109,12 @@ export default function WeightTracker() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="date"
+                  interval={0}
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value: string, index: number) => {
-                    if (index === 0) return value;
-                    const prevValue = chartData[index - 1]?.date;
-                    return value === prevValue ? "" : value;
-                  }}
+                  angle={-35}
+                  textAnchor="end"
                 />
                 <YAxis
                   domain={[minKg, maxKg]}
