@@ -19,6 +19,7 @@ import Profile from "@/pages/Profile";
 import Developer from "@/pages/Developer";
 import ExerciseApiSearch from "@/pages/ExerciseApiSearch";
 import WeightTracker from "@/pages/WeightTracker";
+import ProgressPhotos from "@/pages/ProgressPhotos";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();

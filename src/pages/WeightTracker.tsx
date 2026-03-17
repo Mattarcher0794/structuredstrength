@@ -159,7 +159,7 @@ export default function WeightTracker() {
                 <span className="text-sm text-muted-foreground">
                   {format(new Date(l.logged_at), "d MMM yyyy")}
                 </span>
-                <span className="text-sm font-medium">{Number(l.weight_kg)} kg</span>
+                <span className="text-xs font-normal">{Number(l.weight_kg)} kg</span>
               </div>
             ))}
           </div>
