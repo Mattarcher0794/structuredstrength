@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { playRestTimerDing } from "@/lib/restTimerSound";
 import { getPreviousBest } from "@/lib/pbDetection";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,6 +148,7 @@ export default function ActiveWorkout() {
       const elapsed = Math.floor((Date.now() - restStartRef.current) / 1000);
       const remaining = restTargetRef.current - elapsed;
       if (remaining <= 0) {
+        playRestTimerDing();
         setRestTime(0);
         setRestRunning(false);
       } else {
@@ -299,7 +301,7 @@ export default function ActiveWorkout() {
               }}>
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="rounded-full" onClick={() => { setRestRunning(false); setRestTime(0); }}>
+              <Button variant="outline" size="sm" className="rounded-full" onClick={() => { playRestTimerDing(); setRestRunning(false); setRestTime(0); }}>
                 Skip
               </Button>
             </div>
