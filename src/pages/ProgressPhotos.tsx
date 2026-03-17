@@ -154,16 +154,27 @@ export default function ProgressPhotos() {
                 <div className="grid grid-cols-3 gap-2">
                   {ANGLES.map((angle) => {
                     const photo = group.photos.find((p) => p.angle === angle);
+                    // Compute index of this entry within all photos of this angle (ASC order)
+                    const anglePhotos = allPhotos
+                      .filter((p) => p.angle === angle)
+                      .sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime());
+                    const angleIndex = photo ? anglePhotos.findIndex((p) => p.id === photo.id) : -1;
+
                     return (
                       <div
                         key={angle}
                         className="aspect-square rounded-xl bg-muted border border-border overflow-hidden"
+                        onClick={() => {
+                          if (photo && angleIndex >= 0) {
+                            navigate(`/progress-photos/compare/${angle}?index=${angleIndex}`);
+                          }
+                        }}
                       >
                         {photo ? (
                           <img
                             src={photo.photo_url}
                             alt={`${angle} - ${group.date}`}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover active:opacity-80 transition-opacity cursor-pointer"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

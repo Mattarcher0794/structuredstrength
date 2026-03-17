@@ -54,6 +54,7 @@ function ProtectedRoutes() {
       </Route>
       <Route path="weight" element={<WeightTracker />} />
       <Route path="progress-photos" element={<ProgressPhotos />} />
+      <Route path="progress-photos/compare/:angle" element={<ProgressPhotosCompare />} />
       <Route path="workout/:sessionId" element={<ActiveWorkout />} />
       <Route path="workout/:sessionId/summary" element={<WorkoutSummary />} />
       <Route path="*" element={<NotFound />} />
