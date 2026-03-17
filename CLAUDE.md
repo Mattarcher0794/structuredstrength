@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2026-03-08
+> Last updated: 2026-03-17
 > Keep this doc updated after every session that changes schema, adds components, ships pending work, or deploys Edge Functions. This is the single source of truth passed between Claude instances.
 
 ---
@@ -137,6 +137,12 @@ UNIQUE INDEX on (phase_id, user_id, week_start_date, original_day_of_week)
 **profiles**
 user_id, display_name, default_rest_seconds
 
+**weight_logs**
+id, user_id, weight_kg (numeric), logged_at (timestamptz)
+
+**progress_photos**
+id, user_id, photo_url (text), angle (text: front/side/back), taken_at (timestamptz)
+
 **nutrition_daily**
 Daily nutrition — feature-flagged OFF.
 
@@ -174,7 +180,8 @@ src/
 │   ├── historyPBDetection.ts   — PB detection for history views
 │   ├── exerciseMatching.ts     — Fuzzy-match AI exercise names to DB
 │   ├── exerciseInsert.ts       — Insert new exercises from AI
-│   └── aiPlanService.ts        — Calls suggest-plan Edge Function
+│   ├── aiPlanService.ts        — Calls suggest-plan Edge Function
+│   └── restTimerSound.ts       — Web Audio API ding, played on rest timer zero and skip
 ├── pages/                      — Route-level components
 └── components/
     ├── AppLayout.tsx            — Shell: Outlet + AnimatePresence + BottomNav
@@ -204,6 +211,9 @@ src/
 | /history/:sessionId | WorkoutDetail.tsx | Past session detail |
 | /profile | Profile.tsx | Name, rest timer, sign out, passcode-gated Developer access |
 | /auth | Auth.tsx | Sign in / sign up |
+| /weight | WeightTracker.tsx | Weight log: line chart (Recharts), log weight bottom sheet, weight history list |
+| /progress-photos | ProgressPhotos.tsx | Progress photos: scrollable timeline grid, guided 3-step check-in flow |
+| /progress-photos/compare/:angle | ProgressPhotosCompare.tsx | Full screen photo viewer: single angle across dates, side-by-side comparison mode |
 
 ---
 
@@ -238,6 +248,7 @@ Home screen fetches overrides for current + next week. Re-fetches both after any
 
 ### Active Workout Flow
 ActiveWorkout.tsx: ActiveExerciseCard + InactiveExerciseCard. Logging a set: inserts session_sets → getPreviousBest() → rest timer starts. EditableSetPill for post-log edits. Swap writes to session_exercise_swaps.
+Rest timer plays an audio ding (via `restTimerSound.ts`) on both natural countdown to zero and manual skip. Uses Web Audio API — no external packages.
 
 ### PB Detection
 - Live (pbDetection.ts): getPreviousBest(exerciseId, currentSessionId) → MAX(weight) excluding current session. Trophy if weight strictly > effectiveBest AND previousBest not null.
@@ -267,6 +278,25 @@ Rest timer uses profile default_rest_seconds.
 
 ---
 
+## PROGRESS TRACKING
+
+### Weight Tracking
+- Table: `weight_logs` (user_id, weight_kg, logged_at)
+- Home card (Today.tsx): shows last logged date + weight. Empty state: "Log your first weight →". Taps to /weight.
+- WeightTracker.tsx: Recharts ResponsiveContainer line chart (pink #C4899A line), kg on Y-axis, dates on X-axis. "Log weight" button opens BottomSheet with numeric input. History list below chart.
+- Query key: `["weight-logs", user?.id]`
+- Units: kg only
+
+### Progress Photos
+- Table: `progress_photos` (user_id, photo_url, angle, taken_at)
+- Storage bucket: `progress-photos` (private, path pattern: {user_id}/{timestamp}-{angle}.jpg)
+- Home card (Today.tsx): shows last logged date + 3 thumbnails. Empty state: "Log your first check-in →". Taps to /progress-photos.
+- ProgressPhotos.tsx: scrollable timeline grid, grouped by date, 3 photos per row (front/side/back). "Add check-in" opens guided 3-step bottom sheet flow (front → side → back, photo library only, all 3 must be submitted together).
+- ProgressPhotosCompare.tsx: full screen dark background page. Single angle view with arrow navigation (ChevronLeft/Right). "Compare" CTA toggles side-by-side mode — latest photo fixed on right, older entries navigable on left with arrow buttons and dot indicator. "Compare" hidden if only 1 entry exists.
+- Query keys: `["progress-photos-latest", user?.id]`, `["progress-photos", user?.id]`, `["progress-photos-angle", user?.id, angle]`
+
+---
+
 ## SESSION SUMMARY (WorkoutSummary.tsx)
 Trophy 48px gold, stats row (duration/sets/exercises, flex:1), PB callout, Done pinned to bottom.
 Confetti on mount (80 particles), second burst if PBs (40 particles, 600ms delay).
@@ -275,6 +305,8 @@ Confetti on mount (80 particles), second burst if PBs (40 particles, 600ms delay
 
 ## BOTTOM SHEETS (all use BottomSheet.tsx — React Portal)
 Props: isOpen, onClose, title, children. No X — tap outside to dismiss. Z-index: backdrop 100, sheet 101. Framer Motion slide-up 300ms.
+
+Keyboard awareness: uses `visualViewport` resize/scroll listener to detect virtual keyboard height (`window.innerHeight - visualViewport.height`) and applies it as a `bottom` offset on the sheet, lifting it above the keyboard. Falls back gracefully if `visualViewport` is unavailable. This pattern is already in place — any new sheet with inputs gets it for free.
 
 1. MoveWorkoutSheet — today + future uncompleted days, same week. Confirmation step before writing.
 2. DayPeekSheet — tapped day detail. "Move this workout" CTA on eligible days.
@@ -375,6 +407,4 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-03-08 | fix/capacitor-ios-auth | capacitor.config.ts, ios/App/App/Info.plist | Fixed Capacitor iOS networking — enabled CapacitorHttp to route fetch through native URLSession |
-
-| 2026-03-07 | feat/capacitor-ios | capacitor.config.ts, vite.config.ts, ios/ | Added Capacitor iOS native wrapper |
+| 2026-03-17 | feat/weight-tracking | src/pages/WeightTracker.tsx, src/pages/Today.tsx, src/App.tsx, supabase | Weight tracking — home card CTA, /weight page with Recharts line chart, weight_logs table |
