@@ -105,21 +105,27 @@ export default function WeightTracker() {
         ) : (
           <div className="rounded-2xl bg-card border border-border p-4 mt-4">
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={{ left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
+                  tickFormatter={(value: string, index: number) => {
+                    if (index === 0) return value;
+                    const prevValue = chartData[index - 1]?.date;
+                    return value === prevValue ? "" : value;
+                  }}
                 />
                 <YAxis
                   domain={[minKg, maxKg]}
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
-                  width={40}
-                  unit=" kg"
+                  width={32}
+                  tickFormatter={(value: number) => `${value}`}
+                  label={{ value: "kg", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" }, offset: 4 }}
                 />
                 <Tooltip
                   contentStyle={{

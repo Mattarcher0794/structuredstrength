@@ -843,7 +843,7 @@ export default function Today() {
       }
 
       {/* Progress section */}
-      <div className="space-y-3">
+       <div className="mt-6 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <WeightCard userId={user?.id} />
           <div className="rounded-2xl bg-card border border-border p-4 shadow-sm">
