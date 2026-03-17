@@ -122,7 +122,7 @@ export default function WeightTracker() {
                   tickLine={false}
                   axisLine={false}
                   width={32}
-                  tickFormatter={(value: number) => `${value}`}
+                  tickFormatter={(value: number) => `${value} kg`}
                   label={{ value: "kg", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" }, offset: 4 }}
                 />
                 <Tooltip
