@@ -12,10 +12,9 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
   Tooltip,
+  LabelList,
 } from "recharts";
 import { BottomSheet } from "@/components/BottomSheet";
 
@@ -104,29 +103,9 @@ export default function WeightTracker() {
           </div>
         ) : (
           <div className="rounded-2xl bg-card border border-border p-4 mt-4">
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData} margin={{ left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value: string, index: number) => {
-                    if (index === 0) return value;
-                    const prevValue = chartData[index - 1]?.date;
-                    return value === prevValue ? "" : value;
-                  }}
-                />
-                <YAxis
-                  domain={[minKg, maxKg]}
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={32}
-                  tickFormatter={(value: number) => `${value}`}
-                  label={{ value: "kg", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" }, offset: 4 }}
-                />
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={chartData} margin={{ top: 28, right: 32, bottom: 28, left: 32 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <Tooltip
                   contentStyle={{
                     borderRadius: "12px",
@@ -142,7 +121,21 @@ export default function WeightTracker() {
                   strokeWidth={2}
                   dot={{ r: 4, fill: "hsl(var(--primary))" }}
                   activeDot={{ r: 6 }}
-                />
+                >
+                  <LabelList
+                    dataKey="kg"
+                    position="top"
+                    offset={12}
+                    style={{ fontSize: 11, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
+                    formatter={(value: number) => `${value} kg`}
+                  />
+                  <LabelList
+                    dataKey="date"
+                    position="bottom"
+                    offset={12}
+                    style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  />
+                </Line>
               </LineChart>
             </ResponsiveContainer>
           </div>
