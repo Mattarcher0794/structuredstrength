@@ -844,7 +844,6 @@ export default function Today() {
 
       {/* Progress section */}
       <div className="space-y-3">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Progress</p>
         <div className="grid grid-cols-2 gap-3">
           <WeightCard userId={user?.id} />
           <div className="rounded-2xl bg-card border border-border p-4 shadow-sm">
