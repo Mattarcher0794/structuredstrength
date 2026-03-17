@@ -276,6 +276,30 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_photos: {
+        Row: {
+          angle: string
+          id: string
+          photo_url: string
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          angle: string
+          id?: string
+          photo_url: string
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          angle?: string
+          id?: string
+          photo_url?: string
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       session_exercise_swaps: {
         Row: {
           id: string
