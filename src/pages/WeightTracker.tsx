@@ -113,17 +113,14 @@ export default function WeightTracker() {
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
-                  angle={-35}
-                  textAnchor="end"
                 />
                 <YAxis
                   domain={[minKg, maxKg]}
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   tickLine={false}
                   axisLine={false}
-                  width={32}
+                  width={60}
                   tickFormatter={(value: number) => `${value} kg`}
-                  label={{ value: "kg", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" }, offset: 4 }}
                 />
                 <Tooltip
                   contentStyle={{
