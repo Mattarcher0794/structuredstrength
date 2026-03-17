@@ -74,6 +74,50 @@ function WeightCard({ userId }: { userId?: string }) {
   );
 }
 
+function ProgressPhotosCard({ userId }: { userId?: string }) {
+  const navigate = useNavigate();
+  const { data: latestPhotos } = useQuery({
+    queryKey: ["progress-photos-latest", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("progress_photos")
+        .select("photo_url, angle, taken_at")
+        .eq("user_id", userId!)
+        .order("taken_at", { ascending: false })
+        .limit(3);
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  const hasPhotos = latestPhotos && latestPhotos.length > 0;
+
+  return (
+    <button
+      onClick={() => navigate("/progress-photos")}
+      className="rounded-2xl bg-card border border-border p-4 shadow-sm text-left w-full"
+    >
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-2">Progress Photos</p>
+      {hasPhotos ? (
+        <>
+          <p className="text-xs text-muted-foreground mb-1.5">
+            {format(new Date(latestPhotos[0].taken_at), "d MMM yyyy")}
+          </p>
+          <div className="flex gap-1">
+            {latestPhotos.slice(0, 3).map((p, i) => (
+              <div key={i} className="w-7 h-7 rounded bg-muted border border-border overflow-hidden">
+                <img src={p.photo_url} alt={p.angle} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">Log your first check-in →</p>
+      )}
+    </button>
+  );
+}
+
 export default function Today() {
   const { user } = useAuth();
   const navigate = useNavigate();
