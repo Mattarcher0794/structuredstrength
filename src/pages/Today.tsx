@@ -805,6 +805,18 @@ export default function Today() {
         </div>
       }
 
+      {/* Progress section */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Progress</p>
+        <div className="grid grid-cols-2 gap-3">
+          <WeightCard userId={user?.id} />
+          <div className="rounded-2xl bg-card border border-border p-4 shadow-sm">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-2">Progress Photos</p>
+            <p className="text-xs text-muted-foreground">Coming soon</p>
+          </div>
+        </div>
+      </div>
+
       {/* Move workout sheet — global so it works from any entry point */}
       {activePhase && user &&
       <MoveWorkoutSheet
