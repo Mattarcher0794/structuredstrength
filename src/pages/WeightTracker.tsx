@@ -12,10 +12,9 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
   Tooltip,
+  LabelList,
 } from "recharts";
 import { BottomSheet } from "@/components/BottomSheet";
 
