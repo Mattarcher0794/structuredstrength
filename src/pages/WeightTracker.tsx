@@ -105,7 +105,7 @@ export default function WeightTracker() {
         ) : (
           <div className="rounded-2xl bg-card border border-border p-4 mt-4">
             <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData} margin={{ left: 8 }}>
+              <LineChart data={chartData} margin={{ top: 16, right: 24, bottom: 16, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="date"
