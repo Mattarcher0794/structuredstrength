@@ -367,6 +367,27 @@ export type Database = {
           },
         ]
       }
+      weight_logs: {
+        Row: {
+          id: string
+          logged_at: string
+          user_id: string
+          weight_kg: number
+        }
+        Insert: {
+          id?: string
+          logged_at?: string
+          user_id: string
+          weight_kg: number
+        }
+        Update: {
+          id?: string
+          logged_at?: string
+          user_id?: string
+          weight_kg?: number
+        }
+        Relationships: []
+      }
       workout_sessions: {
         Row: {
           completed_at: string | null

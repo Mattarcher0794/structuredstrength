@@ -18,6 +18,7 @@ import WorkoutDetail from "@/pages/WorkoutDetail";
 import Profile from "@/pages/Profile";
 import Developer from "@/pages/Developer";
 import ExerciseApiSearch from "@/pages/ExerciseApiSearch";
+import WeightTracker from "@/pages/WeightTracker";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ function ProtectedRoutes() {
         <Route path="profile/developer" element={<Developer />} />
         <Route path="profile/developer/exercise-api" element={<ExerciseApiSearch />} />
       </Route>
+      <Route path="weight" element={<WeightTracker />} />
       <Route path="workout/:sessionId" element={<ActiveWorkout />} />
       <Route path="workout/:sessionId/summary" element={<WorkoutSummary />} />
       <Route path="*" element={<NotFound />} />
