@@ -37,6 +37,43 @@ function getDayOfWeek(): number {
 
 const DAY_LABELS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+function WeightCard({ userId }: { userId?: string }) {
+  const navigate = useNavigate();
+  const { data: latestWeight } = useQuery({
+    queryKey: ["latest-weight", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("weight_logs")
+        .select("weight_kg, logged_at")
+        .eq("user_id", userId!)
+        .order("logged_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  return (
+    <button
+      onClick={() => navigate("/weight")}
+      className="rounded-2xl bg-card border border-border p-4 shadow-sm text-left w-full"
+    >
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-2">Weight</p>
+      {latestWeight ? (
+        <>
+          <p className="text-xs text-muted-foreground mb-0.5">
+            {format(new Date(latestWeight.logged_at), "d MMM yyyy")}
+          </p>
+          <p className="text-lg font-semibold">{Number(latestWeight.weight_kg)} kg</p>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">Log your first weight →</p>
+      )}
+    </button>
+  );
+}
+
 export default function Today() {
   const { user } = useAuth();
   const navigate = useNavigate();
