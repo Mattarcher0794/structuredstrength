@@ -20,6 +20,7 @@ import Developer from "@/pages/Developer";
 import ExerciseApiSearch from "@/pages/ExerciseApiSearch";
 import WeightTracker from "@/pages/WeightTracker";
 import ProgressPhotos from "@/pages/ProgressPhotos";
+import ProgressPhotosCompare from "@/pages/ProgressPhotosCompare";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
