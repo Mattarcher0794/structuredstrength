@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PageHeader } from "@/components/PageHeader";
+import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,7 @@ import PasscodeSheet from "@/components/PasscodeSheet";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const { scrollRef, opacity, handleScroll } = useScrollHeader();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -51,10 +54,18 @@ export default function Profile() {
   });
 
   return (
-    <div className="mx-auto max-w-lg px-5 pt-12">
-      <h1 className="text-2xl font-semibold mb-6">Profile</h1>
+    <>
+      <PageHeader title="Profile" opacity={opacity} />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="bg-background"
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+      >
+        <div className="mx-auto max-w-lg px-5">
+          <h1 className="text-2xl font-semibold mb-6 pt-6">Profile</h1>
 
-      <div className="space-y-5">
+          <div className="space-y-5">
         <div className="space-y-1.5">
           <Label>Email</Label>
           <Input value={user?.email || ""} disabled className="rounded-2xl opacity-60" />
@@ -94,14 +105,16 @@ export default function Profile() {
         </button>
       </div>
 
-      <PasscodeSheet
-        open={passcodeOpen}
-        onOpenChange={setPasscodeOpen}
-        onSuccess={() => {
-          sessionStorage.setItem("dev_unlocked", "true");
-          navigate("/profile/developer");
-        }}
-      />
-    </div>
+          <PasscodeSheet
+            open={passcodeOpen}
+            onOpenChange={setPasscodeOpen}
+            onSuccess={() => {
+              sessionStorage.setItem("dev_unlocked", "true");
+              navigate("/profile/developer");
+            }}
+          />
+        </div>
+      </div>
+    </>
   );
 }
