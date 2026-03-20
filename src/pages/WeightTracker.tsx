@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -79,8 +79,14 @@ export default function WeightTracker() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Page title */}
-      <div className="px-5 pt-6 pb-4">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-muted transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
         <h1 className="text-2xl font-display font-semibold">Weight</h1>
       </div>
 
