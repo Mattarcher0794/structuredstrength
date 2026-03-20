@@ -51,10 +51,10 @@ function ProtectedRoutes() {
         <Route path="profile" element={<Profile />} />
         <Route path="profile/developer" element={<Developer />} />
         <Route path="profile/developer/exercise-api" element={<ExerciseApiSearch />} />
+        <Route path="weight" element={<WeightTracker />} />
+        <Route path="progress-photos" element={<ProgressPhotos />} />
+        <Route path="progress-photos/compare/:angle" element={<ProgressPhotosCompare />} />
       </Route>
-      <Route path="weight" element={<WeightTracker />} />
-      <Route path="progress-photos" element={<ProgressPhotos />} />
-      <Route path="progress-photos/compare/:angle" element={<ProgressPhotosCompare />} />
       <Route path="workout/:sessionId" element={<ActiveWorkout />} />
       <Route path="workout/:sessionId/summary" element={<WorkoutSummary />} />
       <Route path="*" element={<NotFound />} />
