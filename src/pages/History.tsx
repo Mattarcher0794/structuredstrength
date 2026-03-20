@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { PageHeader } from "@/components/PageHeader";
+import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +11,7 @@ import { detectSessionPBs } from "@/lib/historyPBDetection";
 export default function History() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { scrollRef, opacity, handleScroll } = useScrollHeader();
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["history", user?.id],
@@ -35,8 +38,16 @@ export default function History() {
   });
 
   return (
-    <div className="mx-auto max-w-lg px-5 pt-12">
-      <h1 className="text-2xl font-semibold mb-6">History</h1>
+    <>
+      <PageHeader title="History" opacity={opacity} />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="bg-background"
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+      >
+        <div className="mx-auto max-w-lg px-5">
+          <h1 className="text-2xl font-semibold mb-6 pt-6">History</h1>
 
       {isLoading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted" />)}</div>
@@ -78,6 +89,8 @@ export default function History() {
           })}
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </>
   );
 }

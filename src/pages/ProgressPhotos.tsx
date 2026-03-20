@@ -4,7 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Camera } from "lucide-react";
+import { ChevronRight, Camera } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { BottomSheet } from "@/components/BottomSheet";
@@ -26,6 +28,7 @@ interface PhotoGroup {
 export default function ProgressPhotos() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { scrollRef, opacity, handleScroll } = useScrollHeader();
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -122,20 +125,20 @@ export default function ProgressPhotos() {
   const isLastStep = step === 2;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-muted transition-colors"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-2xl font-display font-semibold">Progress Photos</h1>
-      </div>
+    <>
+      <PageHeader title="Progress Photos" showBack opacity={opacity} />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="bg-background"
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+      >
+        <div className="flex items-center gap-3 px-5 pt-6 pb-4">
+          <h1 className="text-2xl font-display font-semibold">Progress Photos</h1>
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 px-5 pb-32">
+        {/* Content */}
+        <div className="flex-1 px-5 pb-32">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -296,6 +299,7 @@ export default function ProgressPhotos() {
           </div>
         </div>
       </BottomSheet>
-    </div>
+      </div>
+    </>
   );
 }

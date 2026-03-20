@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PageHeader } from "@/components/PageHeader";
+import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +47,7 @@ function PhaseCard({ phase, navigate, activateMutation, statusColors }: any) {
 export default function Phases() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { scrollRef, opacity, handleScroll } = useScrollHeader();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -85,13 +88,21 @@ export default function Phases() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-5 pt-12">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Phases</h1>
-        <Button onClick={() => navigate("/phases/new")} size="sm" className="rounded-2xl gap-1">
-          <Plus className="h-4 w-4" /> New
-        </Button>
-      </div>
+    <>
+      <PageHeader title="Phases" opacity={opacity} />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="bg-background"
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+      >
+        <div className="mx-auto max-w-lg px-5">
+          <div className="flex items-center justify-between mb-6 pt-6">
+            <h1 className="text-2xl font-semibold">Phases</h1>
+            <Button onClick={() => navigate("/phases/new")} size="sm" className="rounded-2xl gap-1">
+              <Plus className="h-4 w-4" /> New
+            </Button>
+          </div>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -141,6 +152,8 @@ export default function Phases() {
           )}
         </>
       )}
-    </div>
+        </div>
+      </div>
+    </>
   );
 }
