@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { PageTitleRow } from "@/components/PageTitleRow";
 import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,10 +61,10 @@ export default function Profile() {
         ref={scrollRef}
         onScroll={handleScroll}
         className="bg-background"
-        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top)' }}
       >
+        <PageTitleRow title="Profile" />
         <div className="mx-auto max-w-lg px-5">
-          <h1 className="text-2xl font-semibold mb-6 pt-6">Profile</h1>
 
           <div className="space-y-5">
         <div className="space-y-1.5">

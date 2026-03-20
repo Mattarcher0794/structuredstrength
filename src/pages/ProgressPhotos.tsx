@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Camera } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { PageTitleRow } from "@/components/PageTitleRow";
 import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -131,11 +132,9 @@ export default function ProgressPhotos() {
         ref={scrollRef}
         onScroll={handleScroll}
         className="bg-background"
-        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-          <h1 className="text-2xl font-display font-semibold">Progress Photos</h1>
-        </div>
+        <PageTitleRow title="Progress Photos" showBack />
 
         {/* Content */}
         <div className="flex-1 px-5 pb-32">

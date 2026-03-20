@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { PageTitleRow } from "@/components/PageTitleRow";
 import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,10 +45,10 @@ export default function History() {
         ref={scrollRef}
         onScroll={handleScroll}
         className="bg-background"
-        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top)' }}
       >
+        <PageTitleRow title="History" />
         <div className="mx-auto max-w-lg px-5">
-          <h1 className="text-2xl font-semibold mb-6 pt-6">History</h1>
 
       {isLoading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted" />)}</div>
