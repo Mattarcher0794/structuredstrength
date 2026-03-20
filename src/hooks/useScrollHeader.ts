@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useLayoutEffect } from 'react';
 
 export function useScrollHeader(fadeStart = 80, fadeEnd = 130) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -13,7 +13,7 @@ export function useScrollHeader(fadeStart = 80, fadeEnd = 130) {
     setOpacity(newOpacity);
   }, [fadeStart, fadeEnd]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
