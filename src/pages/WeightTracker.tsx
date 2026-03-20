@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { PageTitleRow } from "@/components/PageTitleRow";
 import { useScrollHeader } from "@/hooks/useScrollHeader";
 import { format } from "date-fns";
 import {
@@ -84,9 +85,9 @@ export default function WeightTracker() {
         ref={scrollRef}
         onScroll={handleScroll}
         className="bg-background"
-        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <h1 className="text-2xl font-display font-semibold px-5 pt-6 pb-4">Weight</h1>
+        <PageTitleRow title="Weight" showBack />
 
         {/* Content */}
         <div className="flex-1 px-5 pb-32">

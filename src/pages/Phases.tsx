@@ -94,7 +94,7 @@ export default function Phases() {
         ref={scrollRef}
         onScroll={handleScroll}
         className="bg-background"
-        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'calc(44px + env(safe-area-inset-top))' }}
+        style={{ height: '100vh', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="mx-auto max-w-lg px-5">
           <div className="flex items-center justify-between mb-6 pt-6">

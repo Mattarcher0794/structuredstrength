@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 
-export function useScrollHeader(fadeStart = 60, fadeEnd = 110) {
+export function useScrollHeader(fadeStart = 80, fadeEnd = 130) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [opacity, setOpacity] = useState(0);
 
@@ -12,6 +12,13 @@ export function useScrollHeader(fadeStart = 60, fadeEnd = 110) {
     );
     setOpacity(newOpacity);
   }, [fadeStart, fadeEnd]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+    setOpacity(0);
+  }, []);
 
   return { scrollRef, opacity, handleScroll };
 }

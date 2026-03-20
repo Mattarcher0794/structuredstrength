@@ -10,6 +10,8 @@ interface PageHeaderProps {
 export function PageHeader({ title, showBack = false, opacity }: PageHeaderProps) {
   const navigate = useNavigate();
 
+  if (opacity === 0) return null;
+
   return (
     <div
       style={{
@@ -21,33 +23,21 @@ export function PageHeader({ title, showBack = false, opacity }: PageHeaderProps
         zIndex: 50,
         backgroundColor: `rgba(245, 242, 239, ${opacity})`,
         boxShadow: `0 1px 0 rgba(0,0,0,${opacity * 0.06}), 0 2px 8px rgba(0,0,0,${opacity * 0.04})`,
-        pointerEvents: opacity > 0.5 ? 'auto' : 'none',
       }}
     >
       <div className="flex items-center justify-center h-11 px-4 relative">
-        {/* Back button — always visible, never fades */}
         {showBack && (
           <button
             onClick={() => navigate(-1)}
             className="absolute left-4 flex items-center"
-            style={{
-              color: '#2C2925',
-              opacity: 1,
-              pointerEvents: 'auto',
-              zIndex: 1,
-            }}
+            style={{ color: '#2C2925' }}
           >
             <ChevronLeft size={24} />
           </button>
         )}
-        {/* Title — fades in with scroll */}
         <span
           className="text-sm font-medium tracking-wide"
-          style={{
-            color: '#2C2925',
-            opacity,
-            transition: 'opacity 0.15s ease',
-          }}
+          style={{ color: '#2C2925', opacity, transition: 'opacity 0.15s ease' }}
         >
           {title}
         </span>
