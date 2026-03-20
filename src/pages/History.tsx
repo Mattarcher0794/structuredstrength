@@ -48,7 +48,7 @@ export default function History() {
         style={{ height: '100vh', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top)' }}
       >
         <PageTitleRow title="History" />
-        <div className="mx-auto max-w-lg px-5">
+        <div className="mx-auto max-w-lg px-5 pb-32">
 
       {isLoading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted" />)}</div>
