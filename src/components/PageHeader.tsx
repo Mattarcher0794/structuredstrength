@@ -10,8 +10,6 @@ interface PageHeaderProps {
 export function PageHeader({ title, showBack = false, opacity }: PageHeaderProps) {
   const navigate = useNavigate();
 
-  if (opacity === 0) return null;
-
   return (
     <div
       style={{
@@ -21,6 +19,10 @@ export function PageHeader({ title, showBack = false, opacity }: PageHeaderProps
         right: 0,
         paddingTop: 'env(safe-area-inset-top)',
         zIndex: 50,
+        opacity,
+        pointerEvents: opacity > 0 ? 'auto' : 'none',
+        willChange: 'opacity, background-color',
+        transform: 'translateZ(0)',
         backgroundColor: `rgba(245, 242, 239, ${opacity})`,
         boxShadow: `0 1px 0 rgba(0,0,0,${opacity * 0.06}), 0 2px 8px rgba(0,0,0,${opacity * 0.04})`,
       }}
