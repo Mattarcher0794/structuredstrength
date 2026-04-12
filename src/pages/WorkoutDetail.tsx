@@ -1,7 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Trophy } from "lucide-react";
+import { ArrowLeft, Check, Trophy, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { format, differenceInMinutes } from "date-fns";
 import { detectSetPBs } from "@/lib/historyPBDetection";
 
@@ -17,6 +31,9 @@ function StatItem({ value, label }: { value: string; label: string }) {
 export default function WorkoutDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: session } = useQuery({
     queryKey: ["workout-detail", sessionId],
@@ -51,6 +68,30 @@ export default function WorkoutDetail() {
         sets.map((s: any) => ({ id: s.id, exercise_id: s.exercise_id, weight: s.weight }))
       ),
     enabled: !!session && sets.length > 0,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error: setsError } = await supabase
+        .from("session_sets")
+        .delete()
+        .eq("workout_session_id", sessionId!);
+      if (setsError) throw setsError;
+
+      const { error: sessionError } = await supabase
+        .from("workout_sessions")
+        .delete()
+        .eq("id", sessionId!)
+        .eq("user_id", user!.id);
+      if (sessionError) throw sessionError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["completed-sessions"] });
+      toast("Workout deleted");
+      navigate("/history");
+    },
+    onError: () => {
+      toast("Failed to delete workout");
+    },
   });
 
   if (!session) return null;
@@ -128,6 +169,38 @@ export default function WorkoutDetail() {
           </div>
         ))}
       </div>
+
+      {/* Delete workout */}
+      <Button
+        variant="destructive"
+        onClick={() => setShowDeleteDialog(true)}
+        className="w-full rounded-2xl py-5 mt-8 text-base font-medium"
+        size="lg"
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        Delete workout
+      </Button>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this session and all logged sets. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

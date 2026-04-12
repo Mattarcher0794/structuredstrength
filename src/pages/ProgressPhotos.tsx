@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Camera } from "lucide-react";
+import { ChevronRight, ChevronLeft, Camera } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PageTitleRow } from "@/components/PageTitleRow";
 import { useScrollHeader } from "@/hooks/useScrollHeader";
