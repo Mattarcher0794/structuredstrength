@@ -114,8 +114,16 @@ export default function ProgressPhotos() {
     const file = e.target.files?.[0];
     if (!file) return;
     const angle = ANGLES[step];
+    if (!angle) return;
     setPhotos((prev) => ({ ...prev, [angle]: file }));
-    setPreviews((prev) => ({ ...prev, [angle]: URL.createObjectURL(file) }));
+    setPreviews((prev) => {
+      try {
+        return { ...prev, [angle]: URL.createObjectURL(file) };
+      } catch (err) {
+        console.error('[ProgressPhotos] createObjectURL error:', err);
+        return prev;
+      }
+    });
     // Reset input so same file can be re-selected
     e.target.value = "";
   };
