@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy } from "lucide-react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
