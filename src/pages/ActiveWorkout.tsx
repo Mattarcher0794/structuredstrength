@@ -644,16 +644,25 @@ function ActiveExerciseCard({
         {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
       </p>
 
-      {/* Previous session history strip */}
+      {/* Previous session history strip + View history pill */}
       {prevSets.length > 0 && (
         <div className="mb-3">
-          <button
-            onClick={() => setHistoryExpanded(v => !v)}
-            className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
-          >
-            Last time
-            {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHistoryExpanded(v => !v)}
+              className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
+            >
+              Last time
+              {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+            <button
+              onClick={() => setIsHistoryOpen(true)}
+              className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
+            >
+              <Clock className="h-3 w-3" />
+              View history
+            </button>
+          </div>
           <AnimatePresence initial={false}>
             {historyExpanded && (
               <motion.div
@@ -673,6 +682,19 @@ function ActiveExerciseCard({
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* View history pill when no previous sets */}
+      {prevSets.length === 0 && (
+        <div className="mb-3">
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
+          >
+            <Clock className="h-3 w-3" />
+            View history
+          </button>
         </div>
       )}
 
