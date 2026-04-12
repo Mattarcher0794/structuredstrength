@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy } from "lucide-react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { format } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ExerciseSearch from "@/components/ExerciseSearch";
 
