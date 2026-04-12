@@ -557,6 +557,62 @@ function ActiveExerciseCard({
     },
   });
 
+  // Full exercise history — only fetched when sheet is open
+  const { data: historyData } = useQuery({
+    queryKey: ["exercise-history", exerciseId, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("session_sets")
+        .select(`
+          id,
+          set_number,
+          reps,
+          weight,
+          completed_at,
+          workout_session_id,
+          workout_sessions!inner(
+            id,
+            completed_at,
+            user_id
+          )
+        `)
+        .eq("exercise_id", exerciseId)
+        .eq("workout_sessions.user_id", user!.id)
+        .not("weight", "is", null)
+        .order("completed_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isHistoryOpen && !!exerciseId && !!user?.id,
+  });
+
+  // Compute all-time best set and grouped sessions
+  const bestSet = useMemo(() => {
+    if (!historyData || historyData.length === 0) return null;
+    return historyData.reduce((best: any, s: any) =>
+      (s.weight ?? 0) > (best.weight ?? 0) ? s : best
+    , historyData[0]);
+  }, [historyData]);
+
+  const groupedSessions = useMemo(() => {
+    if (!historyData) return [];
+    const groups = new Map<string, { date: string; sets: any[] }>();
+    historyData.forEach((s: any) => {
+      const wsId = s.workout_session_id;
+      if (!groups.has(wsId)) {
+        const sessionDate = (s as any).workout_sessions?.completed_at || s.completed_at;
+        groups.set(wsId, { date: sessionDate, sets: [] });
+      }
+      groups.get(wsId)!.sets.push(s);
+    });
+    // Sort groups by date descending
+    const arr = Array.from(groups.values());
+    arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort sets within each group
+    arr.forEach(g => g.sets.sort((a: any, b: any) => a.set_number - b.set_number));
+    return arr;
+  }, [historyData]);
+
   // Pre-fill weight: within-session carry forward, or previous session for set #1
   useEffect(() => {
     if (completedSets.length > 0) {
