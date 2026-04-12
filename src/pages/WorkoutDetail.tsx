@@ -69,6 +69,30 @@ export default function WorkoutDetail() {
       ),
     enabled: !!session && sets.length > 0,
   });
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error: setsError } = await supabase
+        .from("session_sets")
+        .delete()
+        .eq("workout_session_id", sessionId!);
+      if (setsError) throw setsError;
+
+      const { error: sessionError } = await supabase
+        .from("workout_sessions")
+        .delete()
+        .eq("id", sessionId!)
+        .eq("user_id", user!.id);
+      if (sessionError) throw sessionError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["completed-sessions"] });
+      toast("Workout deleted");
+      navigate("/history");
+    },
+    onError: () => {
+      toast("Failed to delete workout");
+    },
+  });
 
   if (!session) return null;
 
