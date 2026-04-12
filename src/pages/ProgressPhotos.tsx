@@ -114,13 +114,21 @@ export default function ProgressPhotos() {
     const file = e.target.files?.[0];
     if (!file) return;
     const angle = ANGLES[step];
+    if (!angle) return;
     setPhotos((prev) => ({ ...prev, [angle]: file }));
-    setPreviews((prev) => ({ ...prev, [angle]: URL.createObjectURL(file) }));
+    setPreviews((prev) => {
+      try {
+        return { ...prev, [angle]: URL.createObjectURL(file) };
+      } catch (err) {
+        console.error('[ProgressPhotos] createObjectURL error:', err);
+        return prev;
+      }
+    });
     // Reset input so same file can be re-selected
     e.target.value = "";
   };
 
-  const currentAngle = ANGLES[step];
+  const currentAngle = ANGLES[step] ?? "front";
   const config = ANGLE_CONFIG[currentAngle];
   const canAdvance = !!photos[currentAngle];
   const isLastStep = step === 2;
@@ -286,7 +294,13 @@ export default function ProgressPhotos() {
               </Button>
             ) : (
               <Button
-                onClick={() => setStep(step + 1)}
+                onClick={() => {
+                  try {
+                    setStep(step + 1);
+                  } catch (err) {
+                    console.error('[ProgressPhotos] Step transition error:', err);
+                  }
+                }}
                 disabled={!canAdvance}
                 className="w-full rounded-2xl py-5 text-base font-medium flex-1"
                 size="lg"
