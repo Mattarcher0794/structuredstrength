@@ -7,10 +7,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy } from "lucide-react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { format } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ExerciseSearch from "@/components/ExerciseSearch";
 
@@ -512,7 +512,6 @@ function ActiveExerciseCard({
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
@@ -644,59 +643,13 @@ function ActiveExerciseCard({
         {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
       </p>
 
-      {/* Previous session history strip + View history pill */}
-      {prevSets.length > 0 && (
-        <div className="mb-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setHistoryExpanded(v => !v)}
-              className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
-            >
-              Last time
-              {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </button>
-            <button
-              onClick={() => setIsHistoryOpen(true)}
-              className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
-            >
-              <Clock className="h-3 w-3" />
-              View history
-            </button>
-          </div>
-          <AnimatePresence initial={false}>
-            {historyExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <ul className="space-y-0.5 mt-1">
-                  {prevSets.map((s: any) => (
-                    <li key={s.set_number} className="text-xs text-muted-foreground">
-                      Set {s.set_number}: {s.reps} reps × {s.weight}kg
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* View history pill when no previous sets */}
-      {prevSets.length === 0 && (
-        <div className="mb-3">
-          <button
-            onClick={() => setIsHistoryOpen(true)}
-            className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
-          >
-            <Clock className="h-3 w-3" />
-            View history
-          </button>
-        </div>
-      )}
+      {/* Set history CTA */}
+      <button
+        onClick={() => setIsHistoryOpen(true)}
+        className="text-xs text-muted-foreground mb-3"
+      >
+        🕐 Set history
+      </button>
 
       {/* Completed sets as pills */}
       {completedSets.length > 0 && (
