@@ -643,59 +643,13 @@ function ActiveExerciseCard({
         {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
       </p>
 
-      {/* Previous session history strip + View history pill */}
-      {prevSets.length > 0 && (
-        <div className="mb-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setHistoryExpanded(v => !v)}
-              className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
-            >
-              Last time
-              {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </button>
-            <button
-              onClick={() => setIsHistoryOpen(true)}
-              className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
-            >
-              <Clock className="h-3 w-3" />
-              View history
-            </button>
-          </div>
-          <AnimatePresence initial={false}>
-            {historyExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <ul className="space-y-0.5 mt-1">
-                  {prevSets.map((s: any) => (
-                    <li key={s.set_number} className="text-xs text-muted-foreground">
-                      Set {s.set_number}: {s.reps} reps × {s.weight}kg
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* View history pill when no previous sets */}
-      {prevSets.length === 0 && (
-        <div className="mb-3">
-          <button
-            onClick={() => setIsHistoryOpen(true)}
-            className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
-          >
-            <Clock className="h-3 w-3" />
-            View history
-          </button>
-        </div>
-      )}
+      {/* Set history CTA */}
+      <button
+        onClick={() => setIsHistoryOpen(true)}
+        className="text-xs text-muted-foreground mb-3"
+      >
+        🕐 Set history
+      </button>
 
       {/* Completed sets as pills */}
       {completedSets.length > 0 && (
