@@ -120,7 +120,7 @@ export default function ProgressPhotos() {
     e.target.value = "";
   };
 
-  const currentAngle = ANGLES[step];
+  const currentAngle = ANGLES[step] ?? "front";
   const config = ANGLE_CONFIG[currentAngle];
   const canAdvance = !!photos[currentAngle];
   const isLastStep = step === 2;
