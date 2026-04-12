@@ -286,7 +286,13 @@ export default function ProgressPhotos() {
               </Button>
             ) : (
               <Button
-                onClick={() => setStep(step + 1)}
+                onClick={() => {
+                  try {
+                    setStep(step + 1);
+                  } catch (err) {
+                    console.error('[ProgressPhotos] Step transition error:', err);
+                  }
+                }}
                 disabled={!canAdvance}
                 className="w-full rounded-2xl py-5 text-base font-medium flex-1"
                 size="lg"
