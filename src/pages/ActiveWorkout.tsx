@@ -777,6 +777,68 @@ function ActiveExerciseCard({
           </Button>
         </div>
       )}
+
+      {/* Exercise History Bottom Sheet */}
+      <BottomSheet
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        title={exerciseName}
+      >
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold -mt-1 mb-4">Exercise History</p>
+
+        {/* All-time best set callout */}
+        {bestSet ? (
+          <div className="rounded-2xl bg-gradient-to-r from-pink-50 to-orange-50 border border-pink-200 p-4 mb-5">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl mt-0.5">🏆</span>
+              <div>
+                <p className="text-[#C4899A] text-xs uppercase tracking-wider font-semibold">All-Time Best Set</p>
+                <p className="text-lg font-extrabold text-[#1a1714] mt-0.5">
+                  {bestSet.reps} reps × {bestSet.weight}kg
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {bestSet.completed_at ? format(new Date(bestSet.completed_at), "d MMM yyyy") : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          historyData !== undefined && (
+            <p className="text-sm text-muted-foreground text-center py-6">No history yet</p>
+          )
+        )}
+
+        {/* Session history list */}
+        {groupedSessions.length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-3">Session History</p>
+            <div className="max-h-[40vh] overflow-y-auto space-y-0">
+              {groupedSessions.map((group, gi) => (
+                <div key={gi}>
+                  {gi > 0 && <div className="border-t border-gray-100 my-3" />}
+                  <p className="text-sm font-semibold text-gray-500 mb-1.5">
+                    {format(new Date(group.date), "d MMM yyyy")}
+                  </p>
+                  <div className="space-y-1">
+                    {group.sets.map((s: any) => {
+                      const isBest = bestSet && s.weight === bestSet.weight && s.reps === bestSet.reps;
+                      return (
+                        <div key={s.id} className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-400 w-10">Set {s.set_number}</span>
+                          <span className="text-gray-700">{s.reps} reps × {s.weight}kg</span>
+                          {isBest && (
+                            <span className="bg-yellow-50 border border-yellow-600 text-yellow-700 text-[10px] font-semibold rounded px-1.5 py-0.5">PB</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }
