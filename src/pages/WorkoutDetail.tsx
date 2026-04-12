@@ -169,6 +169,38 @@ export default function WorkoutDetail() {
           </div>
         ))}
       </div>
+
+      {/* Delete workout */}
+      <Button
+        variant="destructive"
+        onClick={() => setShowDeleteDialog(true)}
+        className="w-full rounded-2xl py-5 mt-8 text-base font-medium"
+        size="lg"
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        Delete workout
+      </Button>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this session and all logged sets. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
