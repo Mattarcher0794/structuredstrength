@@ -512,7 +512,6 @@ function ActiveExerciseCard({
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
