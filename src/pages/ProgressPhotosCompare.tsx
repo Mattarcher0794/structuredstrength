@@ -70,7 +70,7 @@ export default function ProgressPhotosCompare() {
       <div className="flex flex-col min-h-screen items-center justify-center bg-gray-950 px-6 text-center">
         <p className="text-white/70 text-sm mb-6">No {angle} photos yet</p>
         <button
-          onClick={() => navigate("/progress-photos")}
+          onClick={() => navigate("/progress-photos", { replace: true })}
           className="text-white text-sm underline underline-offset-4"
         >
           Back to photos
@@ -174,7 +174,7 @@ export default function ProgressPhotosCompare() {
       {/* Top bar */}
       <div className="relative flex items-center justify-center px-4 pt-6 pb-3">
         <button
-          onClick={() => navigate("/progress-photos")}
+          onClick={() => navigate("/progress-photos", { replace: true })}
           className="absolute left-4 flex items-center justify-center h-10 w-10 rounded-full hover:bg-white/10 transition-colors"
         >
           <ArrowLeft className="h-5 w-5 text-white" />
