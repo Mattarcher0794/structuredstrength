@@ -508,10 +508,12 @@ function ActiveExerciseCard({
   onSwap: () => void; isSwapped: boolean; sessionId: string;
   sessionPBs: Record<string, { exerciseName: string; weight: number }>;
 }) {
+  const { user } = useAuth();
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
