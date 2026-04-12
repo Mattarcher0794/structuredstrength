@@ -7,7 +7,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { BottomSheet } from "@/components/BottomSheet";
+import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ExerciseSearch from "@/components/ExerciseSearch";
@@ -506,10 +508,12 @@ function ActiveExerciseCard({
   onSwap: () => void; isSwapped: boolean; sessionId: string;
   sessionPBs: Record<string, { exerciseName: string; weight: number }>;
 }) {
+  const { user } = useAuth();
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
@@ -553,6 +557,62 @@ function ActiveExerciseCard({
     },
   });
 
+  // Full exercise history — only fetched when sheet is open
+  const { data: historyData } = useQuery({
+    queryKey: ["exercise-history", exerciseId, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("session_sets")
+        .select(`
+          id,
+          set_number,
+          reps,
+          weight,
+          completed_at,
+          workout_session_id,
+          workout_sessions!inner(
+            id,
+            completed_at,
+            user_id
+          )
+        `)
+        .eq("exercise_id", exerciseId)
+        .eq("workout_sessions.user_id", user!.id)
+        .not("weight", "is", null)
+        .order("completed_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isHistoryOpen && !!exerciseId && !!user?.id,
+  });
+
+  // Compute all-time best set and grouped sessions
+  const bestSet = useMemo(() => {
+    if (!historyData || historyData.length === 0) return null;
+    return historyData.reduce((best: any, s: any) =>
+      (s.weight ?? 0) > (best.weight ?? 0) ? s : best
+    , historyData[0]);
+  }, [historyData]);
+
+  const groupedSessions = useMemo(() => {
+    if (!historyData) return [];
+    const groups = new Map<string, { date: string; sets: any[] }>();
+    historyData.forEach((s: any) => {
+      const wsId = s.workout_session_id;
+      if (!groups.has(wsId)) {
+        const sessionDate = (s as any).workout_sessions?.completed_at || s.completed_at;
+        groups.set(wsId, { date: sessionDate, sets: [] });
+      }
+      groups.get(wsId)!.sets.push(s);
+    });
+    // Sort groups by date descending
+    const arr = Array.from(groups.values());
+    arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort sets within each group
+    arr.forEach(g => g.sets.sort((a: any, b: any) => a.set_number - b.set_number));
+    return arr;
+  }, [historyData]);
+
   // Pre-fill weight: within-session carry forward, or previous session for set #1
   useEffect(() => {
     if (completedSets.length > 0) {
@@ -584,16 +644,25 @@ function ActiveExerciseCard({
         {isSwapped && <span className="ml-1 text-primary">(swapped)</span>}
       </p>
 
-      {/* Previous session history strip */}
+      {/* Previous session history strip + View history pill */}
       {prevSets.length > 0 && (
         <div className="mb-3">
-          <button
-            onClick={() => setHistoryExpanded(v => !v)}
-            className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
-          >
-            Last time
-            {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHistoryExpanded(v => !v)}
+              className="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
+            >
+              Last time
+              {historyExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+            <button
+              onClick={() => setIsHistoryOpen(true)}
+              className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
+            >
+              <Clock className="h-3 w-3" />
+              View history
+            </button>
+          </div>
           <AnimatePresence initial={false}>
             {historyExpanded && (
               <motion.div
@@ -613,6 +682,19 @@ function ActiveExerciseCard({
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* View history pill when no previous sets */}
+      {prevSets.length === 0 && (
+        <div className="mb-3">
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 text-[#C4899A] text-xs font-medium px-3 py-1"
+          >
+            <Clock className="h-3 w-3" />
+            View history
+          </button>
         </div>
       )}
 
@@ -695,6 +777,68 @@ function ActiveExerciseCard({
           </Button>
         </div>
       )}
+
+      {/* Exercise History Bottom Sheet */}
+      <BottomSheet
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        title={exerciseName}
+      >
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold -mt-1 mb-4">Exercise History</p>
+
+        {/* All-time best set callout */}
+        {bestSet ? (
+          <div className="rounded-2xl bg-gradient-to-r from-pink-50 to-orange-50 border border-pink-200 p-4 mb-5">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl mt-0.5">🏆</span>
+              <div>
+                <p className="text-[#C4899A] text-xs uppercase tracking-wider font-semibold">All-Time Best Set</p>
+                <p className="text-lg font-extrabold text-[#1a1714] mt-0.5">
+                  {bestSet.reps} reps × {bestSet.weight}kg
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {bestSet.completed_at ? format(new Date(bestSet.completed_at), "d MMM yyyy") : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          historyData !== undefined && (
+            <p className="text-sm text-muted-foreground text-center py-6">No history yet</p>
+          )
+        )}
+
+        {/* Session history list */}
+        {groupedSessions.length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-3">Session History</p>
+            <div className="max-h-[40vh] overflow-y-auto space-y-0">
+              {groupedSessions.map((group, gi) => (
+                <div key={gi}>
+                  {gi > 0 && <div className="border-t border-gray-100 my-3" />}
+                  <p className="text-sm font-semibold text-gray-500 mb-1.5">
+                    {format(new Date(group.date), "d MMM yyyy")}
+                  </p>
+                  <div className="space-y-1">
+                    {group.sets.map((s: any) => {
+                      const isBest = bestSet && s.weight === bestSet.weight && s.reps === bestSet.reps;
+                      return (
+                        <div key={s.id} className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-400 w-10">Set {s.set_number}</span>
+                          <span className="text-gray-700">{s.reps} reps × {s.weight}kg</span>
+                          {isBest && (
+                            <span className="bg-yellow-50 border border-yellow-600 text-yellow-700 text-[10px] font-semibold rounded px-1.5 py-0.5">PB</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }
