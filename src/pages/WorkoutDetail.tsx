@@ -31,6 +31,9 @@ function StatItem({ value, label }: { value: string; label: string }) {
 export default function WorkoutDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: session } = useQuery({
     queryKey: ["workout-detail", sessionId],
