@@ -21,6 +21,7 @@ import ExerciseApiSearch from "@/pages/ExerciseApiSearch";
 import WeightTracker from "@/pages/WeightTracker";
 import ProgressPhotos from "@/pages/ProgressPhotos";
 import ProgressPhotosCompare from "@/pages/ProgressPhotosCompare";
+import StravaCallback from "@/pages/StravaCallback";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ function ProtectedRoutes() {
       <Route path="weight" element={<WeightTracker />} />
       <Route path="progress-photos" element={<ProgressPhotos />} />
       <Route path="progress-photos/compare/:angle" element={<ProgressPhotosCompare />} />
+      <Route path="strava/callback" element={<StravaCallback />} />
       <Route path="workout/:sessionId" element={<ActiveWorkout />} />
       <Route path="workout/:sessionId/summary" element={<WorkoutSummary />} />
       <Route path="*" element={<NotFound />} />

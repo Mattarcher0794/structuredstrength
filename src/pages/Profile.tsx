@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, ChevronRight } from "lucide-react";
+import { LogOut, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,12 @@ export default function Profile() {
         <Button onClick={() => updateProfile.mutate()} disabled={updateProfile.isPending} className="rounded-2xl">
           Save changes
         </Button>
+      </div>
+
+      {/* Integrations */}
+      <div className="mt-12 pt-6 border-t border-border">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Integrations</p>
+        <StravaIntegration userId={user?.id} />
       </div>
 
       <div className="mt-12 pt-6 border-t border-border">
