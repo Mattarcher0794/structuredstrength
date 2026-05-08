@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, ChevronRight } from "lucide-react";
+import { LogOut, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +84,12 @@ export default function Profile() {
         </Button>
       </div>
 
+      {/* Integrations */}
+      <div className="mt-12 pt-6 border-t border-border">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Integrations</p>
+        <StravaIntegration userId={user?.id} />
+      </div>
+
       <div className="mt-12 pt-6 border-t border-border">
         <Button variant="ghost" onClick={signOut} className="text-muted-foreground gap-2">
           <LogOut className="h-4 w-4" /> Sign out
@@ -117,5 +123,69 @@ export default function Profile() {
         </div>
       </div>
     </>
+  );
+}
+
+function StravaIntegration({ userId }: { userId: string | undefined }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: stravaConnection } = useQuery({
+    queryKey: ["strava-connection", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("strava_connections")
+        .select("*")
+        .eq("user_id", userId!)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const handleConnect = () => {
+    window.location.href =
+      "https://www.strava.com/oauth/authorize?client_id=237190&response_type=code&redirect_uri=https://structuredstrength.lovable.app/strava/callback&approval_prompt=auto&scope=activity:read_all";
+  };
+
+  const handleDisconnect = async () => {
+    await supabase
+      .from("strava_connections")
+      .update({ is_active: false })
+      .eq("user_id", userId!);
+    queryClient.invalidateQueries({ queryKey: ["strava-connection", userId] });
+    toast({ title: "Strava disconnected" });
+  };
+
+  if (!stravaConnection) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-4">
+        <p className="text-lg font-bold mb-3" style={{ color: "#FC4C02" }}>STRAVA</p>
+        <Button
+          variant="outline"
+          onClick={handleConnect}
+          className="w-full rounded-2xl border-[#C4899A] text-foreground hover:bg-[#C4899A]/5"
+        >
+          Connect Strava
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <p className="text-lg font-bold mb-2" style={{ color: "#FC4C02" }}>STRAVA</p>
+      <div className="flex items-center gap-2 text-sm text-green-600">
+        <CheckCircle2 className="h-4 w-4" />
+        <span>Connected</span>
+      </div>
+      <button
+        onClick={handleDisconnect}
+        className="mt-3 text-xs text-muted-foreground hover:text-foreground"
+      >
+        Disconnect
+      </button>
+    </div>
   );
 }

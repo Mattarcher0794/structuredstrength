@@ -391,6 +391,86 @@ export type Database = {
           },
         ]
       }
+      strava_activities: {
+        Row: {
+          activity_type: string
+          distance_meters: number | null
+          duration_seconds: number | null
+          id: string
+          received_at: string
+          started_at: string | null
+          strava_activity_id: number
+          user_id: string
+          workout_session_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          id?: string
+          received_at?: string
+          started_at?: string | null
+          strava_activity_id: number
+          user_id: string
+          workout_session_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          id?: string
+          received_at?: string
+          started_at?: string | null
+          strava_activity_id?: number
+          user_id?: string
+          workout_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strava_activities_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strava_connections: {
+        Row: {
+          access_token: string
+          connected_at: string
+          id: string
+          is_active: boolean
+          refresh_token: string
+          scope: string | null
+          strava_athlete_id: number
+          token_expires_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          id?: string
+          is_active?: boolean
+          refresh_token: string
+          scope?: string | null
+          strava_athlete_id: number
+          token_expires_at: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          id?: string
+          is_active?: boolean
+          refresh_token?: string
+          scope?: string | null
+          strava_athlete_id?: number
+          token_expires_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weight_logs: {
         Row: {
           id: string
