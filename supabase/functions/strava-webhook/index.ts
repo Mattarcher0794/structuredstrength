@@ -130,7 +130,6 @@ serve(async (req) => {
 
       let phaseDayId: string | null = null;
       let phaseId: string | null = null;
-      let workoutName = "Run";
 
       if (activePhase) {
         // Check phase_day_overrides first
@@ -153,7 +152,7 @@ serve(async (req) => {
 
         const { data: phaseDay } = await supabase
           .from("phase_days")
-          .select("id, workout_name, day_type")
+          .select("id, day_type")
           .eq("phase_id", activePhase.id)
           .eq("day_of_week", lookupDow)
           .eq("day_type", "cardio")
@@ -162,7 +161,6 @@ serve(async (req) => {
         if (phaseDay) {
           phaseDayId = phaseDay.id;
           phaseId = activePhase.id;
-          workoutName = phaseDay.workout_name || "Run";
           console.log(`Matched to scheduled cardio day: ${phaseDay.id}`);
         } else {
           console.log("No scheduled cardio day found — logging as unscheduled");
@@ -170,19 +168,22 @@ serve(async (req) => {
       }
 
       // 8. Write workout_session row
+      const activityStartDate = new Date(activity.start_date_local);
+
       const { data: session, error: sessionError } = await supabase
         .from("workout_sessions")
         .insert({
           user_id: userId,
           phase_id: phaseId,
           phase_day_id: phaseDayId,
-          workout_name: workoutName,
+          date: activityStartDate.toISOString().split("T")[0],
           started_at: activity.start_date_local,
           completed_at: new Date(
-            new Date(activity.start_date_local).getTime() +
+            activityStartDate.getTime() +
             activity.elapsed_time * 1000
           ).toISOString(),
           status: "completed",
+          scheduled_day_type: "cardio",
           is_schedule_override: false,
         })
         .select("id")
