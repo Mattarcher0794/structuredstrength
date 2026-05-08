@@ -872,7 +872,7 @@ export default function Today() {
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                   <button
-              onClick={() => {setMoveSourceDow(undefined);setMoveSourceDate(undefined);setMoveSheetOpen(true);}}
+              onClick={() => {setMoveSourceDow(getTodayDayOfWeek());setMoveSourceDate(new Date());setMoveSheetOpen(true);}}
               className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors">
 
                     <ArrowLeftRight className="h-3.5 w-3.5" />

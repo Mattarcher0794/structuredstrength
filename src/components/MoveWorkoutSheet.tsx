@@ -126,25 +126,23 @@ export function MoveWorkoutSheet({
   const [confirmTarget, setConfirmTarget] = useState<EffectiveDaySchedule | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const availableDays = (() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const isSunday = todayStart.getDay() === 0;
+  const availableDays = useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
 
-    const sourceWeekMonday = new Date(sourceWeekStart + "T00:00:00");
-    const sourceWeekSunday = new Date(sourceWeekMonday);
-    sourceWeekSunday.setDate(sourceWeekMonday.getDate() + 6);
+    const sourceWeekEnd = new Date(sourceWeekStart + "T00:00:00");
+    sourceWeekEnd.setDate(sourceWeekEnd.getDate() + 6);
+    const sourceWeekEndStr = format(sourceWeekEnd, "yyyy-MM-dd");
 
     return sourceWeekSchedule.filter((d) => {
-      if (d.dayOfWeek === sourceDow) return false;
-      if (d.date < todayStart) return false;
       const dateStr = format(d.date, "yyyy-MM-dd");
+      if (d.dayOfWeek === sourceDow) return false;
+      if (dateStr < todayStr) return false;
       if (completedDates.has(dateStr)) return false;
-      if (d.date < sourceWeekMonday || d.date > sourceWeekSunday) return false;
-      if (isSunday && d.date.getDay() === 0) return false;
+      if (dateStr < sourceWeekStart) return false;
+      if (dateStr > sourceWeekEndStr) return false;
       return true;
     });
-  })();
+  }, [sourceWeekSchedule, sourceDow, sourceWeekStart, completedDates]);
 
   const handleConfirm = async () => {
     if (!confirmTarget) return;
