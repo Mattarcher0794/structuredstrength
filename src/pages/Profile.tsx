@@ -145,8 +145,8 @@ function StravaIntegration({ userId }: { userId: string | undefined }) {
   });
 
   const handleConnect = () => {
-    window.location.href =
-      "https://www.strava.com/oauth/authorize?client_id=237190&response_type=code&redirect_uri=https://structuredstrength.lovable.app/strava/callback&approval_prompt=auto&scope=activity:read_all";
+    const redirectUri = `${window.location.origin}/strava/callback`;
+    window.location.href = `https://www.strava.com/oauth/authorize?client_id=237190&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=activity:read_all`;
   };
 
   const handleDisconnect = async () => {

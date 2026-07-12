@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,34 +7,55 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are a fitness planning assistant for a structured strength training app. 
-Generate a weekly training plan for a new phase. 
-Return only valid JSON. No explanation, no markdown, no code fences. 
-Raw JSON only.`;
+const SYSTEM_PROMPT = `You are a fitness planning assistant for a structured strength training app.
+Generate a weekly training plan for a new phase.`;
 
-const JSON_STRUCTURE = `{
-  "planName": string,
-  "days": [
-    {
-      "dayOfWeek": number (1=Mon through 7=Sun),
-      "dayType": "strength" or "rest" or "cardio",
-      "workoutName": string or null,
-      "exercises": [
-        {
-          "name": string,
-          "muscleGroup": "Upper" or "Lower" or "Core" or "Full Body",
-          "subMuscle": string,
-          "equipment": "Barbell" or "Dumbbell" or "Cable" or "Machine" or "Bodyweight" or "Band" or "Smith" or "Landmine" or "Kettlebell" or "Other",
-          "movementPattern": "Push" or "Pull" or "Squat" or "Hinge" or "Lunge" or "Carry" or "Core",
-          "isUnilateral": boolean,
-          "sets": number,
-          "minReps": number,
-          "maxReps": number
-        }
-      ]
-    }
-  ]
-}`;
+const PLAN_SCHEMA = {
+  type: "object",
+  properties: {
+    planName: { type: "string" },
+    days: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          dayOfWeek: { type: "integer", enum: [1, 2, 3, 4, 5, 6, 7] },
+          dayType: { type: "string", enum: ["strength", "rest", "cardio"] },
+          workoutName: { type: ["string", "null"] },
+          exercises: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                muscleGroup: { type: "string", enum: ["Upper", "Lower", "Core", "Full Body"] },
+                subMuscle: { type: "string" },
+                equipment: {
+                  type: "string",
+                  enum: ["Barbell", "Dumbbell", "Cable", "Machine", "Bodyweight", "Band", "Smith", "Landmine", "Kettlebell", "Other"],
+                },
+                movementPattern: {
+                  type: "string",
+                  enum: ["Push", "Pull", "Squat", "Hinge", "Lunge", "Carry", "Core"],
+                },
+                isUnilateral: { type: "boolean" },
+                sets: { type: "integer" },
+                minReps: { type: "integer" },
+                maxReps: { type: "integer" },
+              },
+              required: ["name", "muscleGroup", "subMuscle", "equipment", "movementPattern", "isUnilateral", "sets", "minReps", "maxReps"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["dayOfWeek", "dayType", "workoutName", "exercises"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["planName", "days"],
+  additionalProperties: false,
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -41,8 +63,8 @@ serve(async (req) => {
   try {
     const { lengthWeeks, isReturningUser, lastTwoPhases, recentSessions, phaseName } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     let userPrompt: string;
     const phaseNameLine = phaseName ? `Phase name: ${phaseName}\n` : "";
@@ -51,10 +73,7 @@ serve(async (req) => {
       userPrompt = `Create a beginner-friendly training phase for someone just starting out.
 ${phaseNameLine}Phase length: ${lengthWeeks} weeks.
 Use exactly 3 strength days and 4 rest days per week.
-Focus on a balanced upper/lower split.
-
-Return this exact JSON structure:
-${JSON_STRUCTURE}`;
+Focus on a balanced upper/lower split.`;
     } else {
       userPrompt = `Analyse this user's training history and generate a progressive next phase.
 ${phaseNameLine}Phase length: ${lengthWeeks} weeks.
@@ -70,70 +89,40 @@ Rules:
 - Maintain a similar weekly structure to what the user has been doing
 - Rotate exercise variations where beneficial for hypertrophy
 - Keep the same number of strength days as the previous phase
-- Use the phase name as inspiration for the training focus if relevant
-
-Return this exact JSON structure:
-${JSON_STRUCTURE}`;
+- Use the phase name as inspiration for the training focus if relevant`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+    const response = await client.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 16000,
+      thinking: { type: "adaptive" },
+      system: SYSTEM_PROMPT,
+      output_config: { format: { type: "json_schema", schema: PLAN_SCHEMA } },
+      messages: [{ role: "user", content: userPrompt }],
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || response.stop_reason === "refusal") {
       return new Response(JSON.stringify({ error: "Empty AI response" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Try to parse the JSON content - strip markdown fences if present
-    let cleaned = content.trim();
-    if (cleaned.startsWith("```")) {
-      cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
-    }
-
-    const plan = JSON.parse(cleaned);
+    const plan = JSON.parse(textBlock.text);
 
     return new Response(JSON.stringify({ plan }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof Anthropic.RateLimitError) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("suggest-plan error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),

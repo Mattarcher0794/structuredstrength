@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2026-03-17
+> Last updated: 2026-07-12
 > Keep this doc updated after every session that changes schema, adds components, ships pending work, or deploys Edge Functions. This is the single source of truth passed between Claude instances.
 
 ---
@@ -25,7 +25,6 @@ Tests live in `src/**/*.{test,spec}.{ts,tsx}`, run in jsdom via Vitest. The test
 You are not a generic assistant. You are:
 - Technical product advisor
 - Architecture reviewer
-- Prompt hardener for Lovable
 - System coherence enforcer
 - Long-term thinking partner
 
@@ -53,14 +52,16 @@ After every committed feature or fix, update CHANGELOG.md with a new row (most r
 ---
 
 ## STACK
-React 18 + TypeScript + Vite PWA (not React Native), Supabase (Postgres + Auth + RLS), Tailwind CSS, shadcn/ui, Framer Motion, Lucide React icons, canvas-confetti, TanStack React Query. Lovable Pro active. Local dev via VSCode + Claude Code.
+React 18 + TypeScript + Vite PWA (not React Native), Supabase (Postgres + Auth + RLS), Tailwind CSS, shadcn/ui, Framer Motion, Lucide React icons, canvas-confetti, TanStack React Query. Hosted on Vercel. Local dev via VSCode + Claude Code.
+
+> **Migrated off Lovable (2026-07-12).** Frontend now hosted on Vercel; backend on a self-owned Supabase project. Lovable subscription cancelled. No Lovable dependencies remain in the codebase.
 
 ---
 
 ## REPO
 - GitHub: https://github.com/Mattarcher0794/structuredstrength
 - Main branch: main
-- Lovable sync: bidirectional, auto-syncs on merge to main
+- Hosting: Vercel — production auto-deploys on push to `main` (project `structuredstrength`, URL https://structuredstrength.vercel.app)
 - Local dev: `bun run dev` (port 8080)
 - Package manager: bun
 - Node version: v24.14.0
@@ -72,7 +73,7 @@ git pull
 git checkout -b feat/your-branch-name
 # make changes
 git push origin feat/your-branch-name
-# open PR → merge → Lovable auto-syncs
+# open PR → merge to main → Vercel auto-deploys production
 ```
 Branch naming: `feat/...`, `fix/...`, `chore/...`
 Never edit main directly.
@@ -80,14 +81,16 @@ Never edit main directly.
 ---
 
 ## SUPABASE
-- Project URL: (add here — safe to store)
-- Anon key: (add here — safe to store)
-- Service role key: NEVER here — lives in `.env` only
+- Project ref: `zdaiwcxnsnmxnakxwtkh` (region eu-west-2 / London), owned directly in Matt's Supabase account
+- Project URL: https://zdaiwcxnsnmxnakxwtkh.supabase.co (safe to store)
+- Anon key: safe to store — lives in Vercel env vars (`VITE_SUPABASE_ANON_KEY`) and local `.env`
+- Service role key: NEVER here — lives in `.env` / Supabase secrets only
 - Migration tracking: `/supabase` folder in repo
+- Edge function deploys: `SUPABASE_ACCESS_TOKEN=... npx supabase functions deploy <name> --project-ref zdaiwcxnsnmxnakxwtkh --use-api` (add `--no-verify-jwt` for `strava-webhook`)
 
-**Important:** Lovable preview reads env vars from Lovable project settings, not from `.env`. If `.env` is removed from git tracking, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Lovable project settings to prevent runtime error: `supabaseUrl is required`.
+**Env vars:** Vercel reads build-time env vars from the Vercel project settings (Production/Preview/Development), not from `.env`. `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set there. Locally, use `.env` (see `.env.example`).
 
-Future improvement: create `.env.example` and move env vars fully into Lovable settings.
+> Historical note: the schema in the repo's `/supabase/migrations` was incomplete when migrating off Lovable (Lovable made schema changes it never wrote as migration files — missing `exercises.source/is_approved/created_by` and the `phase_day_overrides` table). The live production schema is the source of truth.
 
 ---
 
@@ -158,7 +161,12 @@ Daily nutrition — feature-flagged OFF.
 
 | Function | Version | Last changed | Summary |
 |---|---|---|---|
-| suggest-plan | — | — | AI plan generation. Called by aiPlanService.ts with user history context. |
+| suggest-plan | 2.0.0 | 2026-07-12 | AI plan generation. Calls Anthropic API directly (Claude Opus 4.8 + structured outputs, schema-enforced plan JSON). Secret: `ANTHROPIC_API_KEY`. Was Lovable AI gateway (Gemini) — major bump, provider contract change. Called by aiPlanService.ts with user history context. |
+| strava-oauth | 1.0.0 | 2026-07-12 | Exchanges Strava auth code for tokens, stores connection. Secrets: `STRAVA_CLIENT_ID/SECRET`. verify_jwt on. |
+| strava-webhook | 1.0.0 | 2026-07-12 | Receives Strava activity webhooks (GET verify challenge + POST events). Secrets: `STRAVA_CLIENT_ID/SECRET`, `STRAVA_WEBHOOK_VERIFY_TOKEN`. **verify_jwt OFF** (Strava calls it). |
+| exercise-search-external | 1.0.0 | 2026-07-12 | RapidAPI exercise lookup for the developer tool. Secrets: `RAPIDAPI_KEY/HOST`. |
+
+> **Pending secrets:** `STRAVA_*` and `RAPIDAPI_*` are not yet set on the new Supabase project — Strava integration and the dev exercise-search stay inert until added via `supabase secrets set`. All other features work.
 
 ---
 
@@ -407,4 +415,4 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-03-17 | feat/weight-tracking | src/pages/WeightTracker.tsx, src/pages/Today.tsx, src/App.tsx, supabase | Weight tracking — home card CTA, /weight page with Recharts line chart, weight_logs table |
+| 2026-07-12 | feat/migrate-off-lovable | Auth.tsx, Profile.tsx, suggest-plan, vite.config.ts, index.html, vercel.json | Migrated off Lovable to Vercel + self-owned Supabase — email/password auth only, suggest-plan on Anthropic API, all data/auth/storage migrated |
