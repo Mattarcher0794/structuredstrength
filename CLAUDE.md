@@ -210,7 +210,8 @@ src/
 │   ├── exerciseMatching.ts     — Fuzzy-match AI exercise names to DB
 │   ├── exerciseInsert.ts       — Insert new exercises from AI
 │   ├── aiPlanService.ts        — Calls suggest-plan Edge Function
-│   └── restTimerSound.ts       — Web Audio API ding, played on rest timer zero and skip
+│   ├── restTimerSound.ts       — Web Audio API ding, played on rest timer zero and skip
+│   └── motion.ts               — Shared Framer Motion presets (SPRING_POP, usePopVariants), reduced-motion-aware
 ├── pages/                      — Route-level components
 └── components/
     ├── AppLayout.tsx            — Shell: Outlet + AnimatePresence + BottomNav
@@ -360,6 +361,7 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 - Tailwind + shadcn
 - Accent CSS tokens (index.css): `--pb-gold`, `--cardio`/`--cardio-foreground`/`--cardio-soft`, `--strava`; primary pink = `--primary`. Use tokens, never hardcode these hex (the canvas-confetti array is the one exception — it needs JS colour strings).
 - Shared components: `BackBar` for back-nav (label = destination); destructive confirmations use `ConfirmBottomSheet` (not AlertDialog).
+- Motion: use `src/lib/motion.ts` presets (`usePopVariants`/`SPRING_POP`) for micro-interactions — fast, spring-eased, `prefers-reduced-motion`-aware (falls back to fade). Set pills pop-in/exit via AnimatePresence; rest timer has a depleting progress ring.
 
 ---
 
@@ -435,6 +437,7 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
+| 2026-07-13 | feat/micro-interactions | src/lib/motion.ts, src/pages/ActiveWorkout.tsx | UX micro-interactions (WS-B) — shared reduced-motion-aware motion presets; set pills pop-in on log / animate out on delete (AnimatePresence); rest timer gains a depleting circular progress ring |
 | 2026-07-13 | feat/ux-consistency-foundation | index.css, BackBar.tsx, WorkoutDetail/Profile/History/WeekStrip/+more | UX consistency foundation (WS-A) — accent colour CSS tokens (--pb-gold/--cardio/--strava) replacing hardcoded hex; shared BackBar component; destructive confirms standardised on ConfirmBottomSheet; WorkoutDetail loading skeleton; #C4899A→primary cleanup |
 | 2026-07-13 | feat/add-delete-sets | src/pages/ActiveWorkout.tsx | Add & delete sets mid-workout — "+ Add a set" for bonus sets past the prescription; long-press a set pill to delete instantly (Undo toast), which renumbers remaining sets 1..N and recomputes the live PB trophy. Session-only; reuses pickBestSet |
 | 2026-07-13 | fix/pb-history-tracking | src/lib/pbDetection.ts, src/pages/ActiveWorkout.tsx | Fixed mid-workout PB tracking being "all over the place" — one shared tested ranking helper (isBetterSet/pickBestSet: heaviest weight, ties by reps); history sheet + live pills now badge exactly ONE best set (by id/setId), reps-aware; removed weight-only getPreviousBest + unused isPersonalBest. 27 tests |
