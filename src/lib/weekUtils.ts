@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 /**
  * Returns the Monday of the current week as a YYYY-MM-DD string.
  */
@@ -5,21 +7,16 @@ export function getWeekStartDate(date?: Date): string {
   const ref = date ? new Date(date) : new Date();
   const day = ref.getDay(); // 0=Sun, 1=Mon...
 
-  let diff: number;
-  if (!date && day === 0) {
-    // Today is Sunday and no explicit date — look ahead to upcoming Monday
-    diff = 1;
-  } else if (day === 0) {
-    // Explicit date that is a Sunday — treat as last day of its week
-    diff = -6;
-  } else {
-    // Mon-Sat — go back to this week's Monday
-    diff = 1 - day;
-  }
+  // Sunday is the LAST day of its Monday-based week — go back 6 days. (Previously
+  // the no-arg case looked ahead to next Monday, which excluded Sunday from its
+  // own week; see move-workout-architecture.md.)
+  const diff = day === 0 ? -6 : 1 - day;
 
   const monday = new Date(ref);
   monday.setDate(ref.getDate() + diff);
-  return monday.toISOString().split("T")[0];
+  // Format from local date parts — toISOString() would shift the day in
+  // positive-offset timezones (e.g. BST midnight → previous day UTC).
+  return format(monday, "yyyy-MM-dd");
 }
 
 /**
@@ -36,7 +33,7 @@ export function getTodayDayOfWeek(): number {
 export function getNextWeekStartDate(): string {
   const current = new Date(getWeekStartDate() + "T00:00:00");
   current.setDate(current.getDate() + 7);
-  return current.toISOString().split("T")[0];
+  return format(current, "yyyy-MM-dd");
 }
 
 /**
