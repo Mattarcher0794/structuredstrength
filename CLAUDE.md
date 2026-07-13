@@ -267,7 +267,8 @@ Model: each `week_day_assignments` row is ABSOLUTE — "calendar-day D shows tem
 UX: full-screen `/week`, tap-to-pick / tap-to-place. Entry via "Rearrange week" by the WeekStrip and DayPeekSheet "Move this workout" (pre-arms the tapped day via router state). Reset via ConfirmBottomSheet.
 
 ### Active Workout Flow
-ActiveWorkout.tsx: ActiveExerciseCard + InactiveExerciseCard. Logging a set: inserts session_sets → PB detection (getPreviousBestSet) → rest timer starts. EditableSetPill for post-log edits. Swap writes to session_exercise_swaps.
+ActiveWorkout.tsx: ActiveExerciseCard + InactiveExerciseCard. Logging a set: inserts session_sets → PB detection (getPreviousBestSet) → rest timer starts. EditableSetPill for post-log edits (tap = edit reps/weight; long-press = delete). Swap writes to session_exercise_swaps.
+Add/delete sets: once prescribed sets are logged, "+ Add a set" reveals the input for a bonus set (session-only, continues numbering). Long-press a set pill deletes it instantly with an Undo toast; delete renumbers the exercise's remaining sets to 1..N (keeps WorkoutDetail/history clean) and recomputes the live PB trophy (renumberExerciseSets/recomputeSessionBest in ActiveWorkout).
 Rest timer plays an audio ding (via `restTimerSound.ts`) on both natural countdown to zero and manual skip. Uses Web Audio API — no external packages.
 
 ### PB Detection
@@ -294,6 +295,7 @@ aiPlanService.ts → suggest-plan Edge Function (with user history context) → 
 
 ## WORKOUT LOGGING
 Weight pre-filled from previous session. Within-session carry forward. Select-all on focus.
+Sets: log up to the prescribed count, then "+ Add a set" for bonus sets. Long-press a logged set pill to delete (instant + Undo toast; remaining sets renumber, PB trophy recomputes).
 Inputs: `type="text"` `inputMode="numeric"` (reps) / `inputMode="decimal"` (weight). `enterKeyHint="next"/"done"`.
 Rest timer uses profile default_rest_seconds.
 
@@ -430,5 +432,6 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
+| 2026-07-13 | feat/add-delete-sets | src/pages/ActiveWorkout.tsx | Add & delete sets mid-workout — "+ Add a set" for bonus sets past the prescription; long-press a set pill to delete instantly (Undo toast), which renumbers remaining sets 1..N and recomputes the live PB trophy. Session-only; reuses pickBestSet |
 | 2026-07-13 | fix/pb-history-tracking | src/lib/pbDetection.ts, src/pages/ActiveWorkout.tsx | Fixed mid-workout PB tracking being "all over the place" — one shared tested ranking helper (isBetterSet/pickBestSet: heaviest weight, ties by reps); history sheet + live pills now badge exactly ONE best set (by id/setId), reps-aware; removed weight-only getPreviousBest + unused isPersonalBest. 27 tests |
 | 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model, shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration live; types.ts regenerated |
