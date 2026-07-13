@@ -366,7 +366,7 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 ---
 
 ## PENDING WORK (priority order)
-1. ~~Move workout fix~~ — DONE (2026-07-13): rebuilt from scratch as the Week Editor (`/week`, `week_day_assignments`, shared `weekSchedule.ts` resolver). NOTE: not yet verified end-to-end on device; Supabase `types.ts` not yet regenerated (WeekEditor/Today use a documented `as any` for `week_day_assignments`).
+1. ~~Move workout fix~~ — DONE (2026-07-13): rebuilt from scratch as the Week Editor (`/week`, `week_day_assignments`, shared `weekSchedule.ts` resolver). `types.ts` regenerated, `as any` bridges removed. NOTE: still not verified end-to-end on a real device/browser (local auth is Netskope-blocked — verify on a Vercel preview or Victoria's device).
 2. Onboarding — stepped flow: experience / goal / days / equipment / injuries — AI generates phase
 3. Rest day "Train anyway" consolidation — replace with override mechanic
 4. Phase completion flow
@@ -429,4 +429,4 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model (chained moves can't corrupt), shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration applied to live DB. Not yet verified on device; types.ts not regenerated |
+| 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model (chained moves can't corrupt), shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration applied to live DB; types.ts regenerated (casts removed). Not yet verified on a real device |
