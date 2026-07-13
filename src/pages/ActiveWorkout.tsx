@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Pause, RotateCcw, ArrowRightLeft, Check, Plus, Trophy } from "lucide-react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { usePopVariants } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import ExerciseSearch from "@/components/ExerciseSearch";
 
@@ -380,11 +381,9 @@ export default function ActiveWorkout() {
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
         >
           <div className="mx-auto max-w-lg flex items-center justify-between">
-            <div>
+            <div className="flex items-center gap-3">
+              <RestRing remaining={restTime} total={restTarget} label={formatTime(restTime)} />
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Rest</p>
-              <p className="text-2xl font-display font-semibold tabular-nums">
-                {formatTime(restTime)}
-              </p>
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setRestRunning(false)}>
@@ -620,6 +619,38 @@ function EditableSetPill({
   );
 }
 
+/* ── Rest Timer Ring ── */
+function RestRing({ remaining, total, label }: { remaining: number; total: number; label: string }) {
+  const reduce = useReducedMotion();
+  const size = 56;
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const frac = total > 0 ? Math.max(0, Math.min(1, remaining / total)) : 0;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - frac)}
+          style={{ transition: reduce ? "none" : "stroke-dashoffset 1s linear" }}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-display font-semibold tabular-nums">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 /* ── Active Exercise Card ── */
 function ActiveExerciseCard({
   exerciseId, exerciseName, numSets, minReps, maxReps,
@@ -638,6 +669,7 @@ function ActiveExerciseCard({
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [addingSet, setAddingSet] = useState(false);
+  const popVariants = usePopVariants();
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
@@ -775,22 +807,25 @@ function ActiveExerciseCard({
       {/* Completed sets as pills */}
       {completedSets.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {completedSets.map((s: any) => {
-            const pbEntry = sessionPBs[exerciseId];
-            const isPB = !!pbEntry && s.id === pbEntry.setId;
-            return (
-              <EditableSetPill
-                key={s.id}
-                set={s}
-                isEditing={editingSetId === s.id}
-                onStartEdit={() => setEditingSetId(s.id)}
-                onCancelEdit={() => setEditingSetId(null)}
-                sessionId={sessionId}
-                isPB={isPB}
-                onDelete={() => onDeleteSet(s)}
-              />
-            );
-          })}
+          <AnimatePresence initial={false}>
+            {completedSets.map((s: any) => {
+              const pbEntry = sessionPBs[exerciseId];
+              const isPB = !!pbEntry && s.id === pbEntry.setId;
+              return (
+                <motion.div key={s.id} layout {...popVariants}>
+                  <EditableSetPill
+                    set={s}
+                    isEditing={editingSetId === s.id}
+                    onStartEdit={() => setEditingSetId(s.id)}
+                    onCancelEdit={() => setEditingSetId(null)}
+                    sessionId={sessionId}
+                    isPB={isPB}
+                    onDelete={() => onDeleteSet(s)}
+                  />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
 
