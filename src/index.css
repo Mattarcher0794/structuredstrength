@@ -47,6 +47,13 @@
 
     --success: 150 40% 45%;
     --success-foreground: 0 0% 100%;
+
+    /* Brand accents — used in inline styles / arbitrary values, not Tailwind theme colors */
+    --pb-gold: #B8860B;
+    --cardio: #A8D4E0;
+    --cardio-foreground: #5a9bae;
+    --cardio-soft: rgba(168, 212, 224, 0.2);
+    --strava: #FC4C02;
   }
 }
 

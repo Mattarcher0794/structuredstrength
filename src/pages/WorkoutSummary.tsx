@@ -102,7 +102,7 @@ export default function WorkoutSummary() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full pb-[96px]">
         {/* Header */}
         <div className="text-center mb-8">
-          <Trophy className="h-8 w-8 mx-auto mb-3" style={{ color: "#B8860B" }} />
+          <Trophy className="h-8 w-8 mx-auto mb-3" style={{ color: "var(--pb-gold)" }} />
           <h1 className="text-2xl font-bold mb-1">Workout complete</h1>
           <p className="text-sm text-muted-foreground">{state.workoutName}</p>
         </div>
@@ -124,8 +124,8 @@ export default function WorkoutSummary() {
             }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Trophy className="h-4 w-4" style={{ color: "#B8860B" }} />
-              <span className="text-sm font-semibold" style={{ color: "#B8860B" }}>
+              <Trophy className="h-4 w-4" style={{ color: "var(--pb-gold)" }} />
+              <span className="text-sm font-semibold" style={{ color: "var(--pb-gold)" }}>
                 Personal bests
               </span>
             </div>

@@ -161,7 +161,7 @@ function StravaIntegration({ userId }: { userId: string | undefined }) {
   if (!stravaConnection) {
     return (
       <div className="rounded-2xl border border-border bg-card p-4">
-        <p className="text-lg font-bold mb-3" style={{ color: "#FC4C02" }}>STRAVA</p>
+        <p className="text-lg font-bold mb-3" style={{ color: "var(--strava)" }}>STRAVA</p>
         <Button
           variant="outline"
           onClick={handleConnect}
@@ -175,7 +175,7 @@ function StravaIntegration({ userId }: { userId: string | undefined }) {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
-      <p className="text-lg font-bold mb-2" style={{ color: "#FC4C02" }}>STRAVA</p>
+      <p className="text-lg font-bold mb-2" style={{ color: "var(--strava)" }}>STRAVA</p>
       <div className="flex items-center gap-2 text-sm text-green-600">
         <CheckCircle2 className="h-4 w-4" />
         <span>Connected</span>

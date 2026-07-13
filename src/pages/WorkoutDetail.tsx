@@ -141,8 +141,8 @@ export default function WorkoutDetail() {
       {/* PB callout */}
       {hasPBs && (
         <div className="flex items-center gap-2 mb-6 px-1">
-          <Trophy className="h-3.5 w-3.5" style={{ color: "#B8860B" }} />
-          <span className="text-xs" style={{ color: "#B8860B" }}>Personal bests in this session</span>
+          <Trophy className="h-3.5 w-3.5" style={{ color: "var(--pb-gold)" }} />
+          <span className="text-xs" style={{ color: "var(--pb-gold)" }}>Personal bests in this session</span>
         </div>
       )}
       {!hasPBs && <div className="mb-6" />}
@@ -157,7 +157,7 @@ export default function WorkoutDetail() {
                 return (
                   <div key={s.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                     {isPB ? (
-                      <Trophy className="h-3 w-3" style={{ color: "#B8860B" }} />
+                      <Trophy className="h-3 w-3" style={{ color: "var(--pb-gold)" }} />
                     ) : (
                       <Check className="h-3.5 w-3.5 text-primary" />
                     )}

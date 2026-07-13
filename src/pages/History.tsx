@@ -65,7 +65,7 @@ function StreakCalendar({
 
   const bgColor: Record<Status, string> = {
     strength: "hsl(350, 40%, 72%)",
-    cardio: "#A8D4E0",
+    cardio: "var(--cardio)",
     rest: "hsl(30, 12%, 92%)",
     blank: "transparent",
   };
@@ -231,7 +231,7 @@ function StreakCalendar({
       >
         {[
           { color: "hsl(350, 40%, 72%)", label: "Strength" },
-          { color: "#A8D4E0", label: "Cardio" },
+          { color: "var(--cardio)", label: "Cardio" },
           { color: "hsl(30, 12%, 92%)", label: "Rest", border: "hsl(30, 15%, 85%)" },
         ].map((x) => (
           <div key={x.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -392,7 +392,7 @@ export default function History() {
                       </div>
                       <div className="flex items-center gap-2">
                         {hasPB && (
-                          <Trophy className="h-3.5 w-3.5" style={{ color: "#B8860B" }} />
+                          <Trophy className="h-3.5 w-3.5" style={{ color: "var(--pb-gold)" }} />
                         )}
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </div>

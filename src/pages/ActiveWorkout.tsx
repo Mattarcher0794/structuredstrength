@@ -561,7 +561,7 @@ function EditableSetPill({
         )}
       >
         <span className="inline-flex items-center gap-1">
-          {isPB && <Trophy className="h-3 w-3" style={{ color: "#B8860B" }} />}
+          {isPB && <Trophy className="h-3 w-3" style={{ color: "var(--pb-gold)" }} />}
           {set.reps} × {set.weight}kg
         </span>
       </button>
