@@ -6,16 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Check, Trophy, Trash2 } from "lucide-react";
 import { BackBar } from "@/components/BackBar";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmBottomSheet from "@/components/ConfirmBottomSheet";
 import { Button } from "@/components/ui/button";
 import { format, differenceInMinutes } from "date-fns";
 import { detectSetPBs } from "@/lib/historyPBDetection";
@@ -180,26 +171,17 @@ export default function WorkoutDetail() {
         Delete workout
       </Button>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this session and all logged sets. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmBottomSheet
+        open={showDeleteDialog}
+        title="Delete this workout?"
+        description="This will permanently delete this session and all logged sets. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+        onCancel={() => setShowDeleteDialog(false)}
+      />
     </div>
   );
 }
