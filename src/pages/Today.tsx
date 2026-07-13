@@ -15,20 +15,17 @@ import { FEATURES } from "@/config/features";
 import { findMatchingExercise } from "@/lib/exerciseMatching";
 import { insertAIExercise } from "@/lib/exerciseInsert";
 import { BottomSheet } from "@/components/BottomSheet";
-import { getWeekStartDate, getNextWeekStartDate, getTodayDayOfWeek, getDateForDayOfWeek } from "@/lib/weekUtils";
-import { MoveWorkoutSheet } from "@/components/MoveWorkoutSheet";
+import { getWeekStartDate, getNextWeekStartDate } from "@/lib/weekUtils";
+import { resolveWeekSchedule, type EffectiveDay } from "@/lib/weekSchedule";
 import { WeekStrip } from "@/components/WeekStrip";
 import { DayPeekSheet } from "@/components/DayPeekSheet";
 
-export interface EffectiveDaySchedule {
-  dayOfWeek: number;
-  date: Date;
-  dayType: string;
-  workoutName: string | null;
-  phaseDay: any | null;
-  isToday: boolean;
-  isOverridden: boolean;
-}
+export type EffectiveDaySchedule = EffectiveDay;
+
+// week_day_assignments isn't in the generated Supabase types until they are
+// regenerated (needs `supabase login` + link). Cast narrowly until then.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sb = supabase as any;
 
 function getDayOfWeek(): number {
   const day = new Date().getDay();
@@ -126,10 +123,7 @@ export default function Today() {
   const dow = getDayOfWeek();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exercisesOpen, setExercisesOpen] = useState(false);
-  const [moveSheetOpen, setMoveSheetOpen] = useState(false);
   const [peekDay, setPeekDay] = useState<EffectiveDaySchedule | null>(null);
-  const [moveSourceDow, setMoveSourceDow] = useState<number | undefined>(undefined);
-  const [moveSourceDate, setMoveSourceDate] = useState<Date | undefined>(undefined);
 
   // Pull-to-refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -154,7 +148,7 @@ export default function Today() {
       const todayStr = format(new Date(), "yyyy-MM-dd");
       await queryClient.invalidateQueries({ queryKey: ["active-phase"] });
       await queryClient.invalidateQueries({ queryKey: ["all-phase-days"] });
-      await queryClient.invalidateQueries({ queryKey: ["week-overrides"] });
+      await queryClient.invalidateQueries({ queryKey: ["week-assignments"] });
       await queryClient.invalidateQueries({ queryKey: ["active-session"] });
       await queryClient.invalidateQueries({ queryKey: ["strength-days"] });
       await queryClient.invalidateQueries({ queryKey: ["weekly-completed"] });
@@ -192,15 +186,15 @@ export default function Today() {
     enabled: !!activePhase
   });
 
-  // Fetch overrides for current week AND next week
+  // Fetch week_day_assignments for current + next week
   const weekStartDate = getWeekStartDate();
   const nextWeekStartDate = getNextWeekStartDate();
-  const { data: allOverrides = [] } = useQuery({
-    queryKey: ["week-overrides", user?.id, activePhase?.id, weekStartDate, nextWeekStartDate],
+  const { data: allAssignments = [] } = useQuery({
+    queryKey: ["week-assignments", user?.id, activePhase?.id, weekStartDate, nextWeekStartDate],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("phase_day_overrides")
-        .select("*")
+      const { data } = await sb
+        .from("week_day_assignments")
+        .select("day_of_week, source_day_of_week, week_start_date")
         .eq("user_id", user!.id)
         .eq("phase_id", activePhase!.id)
         .in("week_start_date", [weekStartDate, nextWeekStartDate]);
@@ -209,61 +203,24 @@ export default function Today() {
     enabled: !!user && !!activePhase
   });
 
-  const currentWeekOverrides = useMemo(
-    () => allOverrides.filter((o) => o.week_start_date === weekStartDate),
-    [allOverrides, weekStartDate]
+  const currentWeekAssignments = useMemo(
+    () => allAssignments.filter((a) => a.week_start_date === weekStartDate),
+    [allAssignments, weekStartDate]
   );
-  const nextWeekOverrides = useMemo(
-    () => allOverrides.filter((o) => o.week_start_date === nextWeekStartDate),
-    [allOverrides, nextWeekStartDate]
+  const nextWeekAssignments = useMemo(
+    () => allAssignments.filter((a) => a.week_start_date === nextWeekStartDate),
+    [allAssignments, nextWeekStartDate]
   );
 
-  // Resolve effective schedule for both weeks (14 days)
+  // Resolve effective schedule for both weeks (14 days) via the shared resolver
   const effectiveWeekSchedule = useMemo<EffectiveDaySchedule[]>(() => {
     if (!allPhaseDays) return [];
-    const todayDow = getTodayDayOfWeek();
-    const currentMonday = new Date(weekStartDate + "T00:00:00");
-    const nextMonday = new Date(nextWeekStartDate + "T00:00:00");
-
-    function resolveWeek(monday: Date, overrides: any[], length: number): EffectiveDaySchedule[] {
-      return Array.from({ length }, (_, i) => {
-        const dayOfWeek = i + 1;
-        const inbound = overrides.find((o) => o.overridden_day_of_week === dayOfWeek);
-        const outbound = overrides.find((o) => o.original_day_of_week === dayOfWeek);
-
-        let phaseDay: any | null = null;
-        let isOverridden = false;
-
-        if (inbound) {
-          phaseDay = allPhaseDays.find((d) => d.day_of_week === inbound.original_day_of_week) ?? null;
-          isOverridden = true;
-        } else if (outbound) {
-          phaseDay = { day_type: "rest", workout_name: null, phase_day_exercises: [] };
-          isOverridden = true;
-        } else {
-          phaseDay = allPhaseDays.find((d) => d.day_of_week === dayOfWeek) ?? null;
-        }
-
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
-
-        return {
-          dayOfWeek,
-          date,
-          dayType: phaseDay?.day_type ?? "rest",
-          workoutName: phaseDay?.workout_name ?? null,
-          phaseDay,
-          isToday: monday === currentMonday && dayOfWeek === todayDow,
-          isOverridden
-        };
-      });
-    }
-
+    const now = new Date();
     return [
-      ...resolveWeek(currentMonday, currentWeekOverrides, 7),
-      ...resolveWeek(nextMonday, nextWeekOverrides, 7),
+      ...resolveWeekSchedule(weekStartDate, allPhaseDays, currentWeekAssignments, now),
+      ...resolveWeekSchedule(nextWeekStartDate, allPhaseDays, nextWeekAssignments, now),
     ];
-  }, [allPhaseDays, currentWeekOverrides, nextWeekOverrides, weekStartDate, nextWeekStartDate]);
+  }, [allPhaseDays, currentWeekAssignments, nextWeekAssignments, weekStartDate, nextWeekStartDate]);
 
   // Resolve today's effective phase day
   const todaySchedule = effectiveWeekSchedule.find((d) => d.isToday);
@@ -692,12 +649,21 @@ export default function Today() {
 
       {/* Week calendar strip */}
       {activePhase && effectiveWeekSchedule.length > 0 &&
-      <WeekStrip
-        schedule={effectiveWeekSchedule}
-        allPhaseDays={allPhaseDays}
-        completedDates={weeklyCompletedDates}
-        onDayTap={(day) => setPeekDay(day)} />
-
+      <div className="mb-2">
+        <div className="mb-2 flex items-center justify-end">
+          <button
+            onClick={() => navigate("/week")}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary min-h-[32px]">
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+            Rearrange week
+          </button>
+        </div>
+        <WeekStrip
+          schedule={effectiveWeekSchedule}
+          allPhaseDays={allPhaseDays}
+          completedDates={weeklyCompletedDates}
+          onDayTap={(day) => setPeekDay(day)} />
+      </div>
       }
 
       {/* Day peek sheet */}
@@ -708,9 +674,8 @@ export default function Today() {
         isCompleted={peekDay ? weeklyCompletedDates.has(format(peekDay.date, "yyyy-MM-dd")) : false}
         isPast={peekDay ? (() => {const t = new Date();t.setHours(0, 0, 0, 0);return peekDay.date < t;})() : false}
         onMoveWorkout={(day) => {
-          setMoveSourceDow(day.dayOfWeek);
-          setMoveSourceDate(day.date);
-          setMoveSheetOpen(true);
+          setPeekDay(null);
+          navigate("/week", { state: { pickDow: day.dayOfWeek } });
         }} />
 
 
@@ -866,19 +831,10 @@ export default function Today() {
               </div>
 
               {isStrengthDay && !activeSession &&
-          <div className="space-y-3">
-                  <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
-                    Start workout
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                  <button
-              onClick={() => {setMoveSourceDow(getTodayDayOfWeek());setMoveSourceDate(new Date());setMoveSheetOpen(true);}}
-              className="flex items-center justify-center gap-1.5 w-full min-h-[44px] text-sm text-muted-foreground hover:text-foreground transition-colors">
-
-                    <ArrowLeftRight className="h-3.5 w-3.5" />
-                    Move workout
-                  </button>
-                </div>
+          <Button onClick={startWorkout} className="w-full rounded-2xl py-6 text-base font-medium" size="lg">
+                  Start workout
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
           }
 
             </>
@@ -894,22 +850,6 @@ export default function Today() {
         </div>
       </div>
 
-      {/* Move workout sheet — global so it works from any entry point */}
-      {activePhase && user &&
-      <MoveWorkoutSheet
-        open={moveSheetOpen}
-        onOpenChange={setMoveSheetOpen}
-        activePhaseId={activePhase.id}
-        userId={user.id}
-        todayWorkoutName={todayDay?.workout_name || ""}
-        effectiveWeekSchedule={effectiveWeekSchedule}
-        allPhaseDays={allPhaseDays ?? undefined}
-        completedDates={weeklyCompletedDates}
-        currentWeekOverrides={currentWeekOverrides}
-        sourceDayOfWeek={moveSourceDow}
-        sourceDayDate={moveSourceDate} />
-
-      }
     </div>);
 
 }

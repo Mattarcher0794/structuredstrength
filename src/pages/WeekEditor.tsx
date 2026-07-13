@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { X, Hand, CalendarOff } from "lucide-react";
@@ -26,7 +26,9 @@ const sb = supabase as any;
 export default function WeekEditor() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  const prearmedPick = (location.state as { pickDow?: number } | null)?.pickDow ?? null;
 
   const today = useMemo(() => new Date(), []);
   const weekStart = getWeekStartDate();
@@ -38,7 +40,7 @@ export default function WeekEditor() {
   }, [mondayDate]);
   const weekEnd = format(sundayDate, "yyyy-MM-dd");
 
-  const [pickedDow, setPickedDow] = useState<number | null>(null);
+  const [pickedDow, setPickedDow] = useState<number | null>(prearmedPick);
   const [resetOpen, setResetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -128,6 +130,14 @@ export default function WeekEditor() {
   );
 
   const pickedDay = pickedDow == null ? null : schedule.find((d) => d.dayOfWeek === pickedDow) ?? null;
+
+  // If arriving pre-armed (from the day peek sheet) with a day that isn't a valid
+  // source, clear the selection once the schedule resolves.
+  useEffect(() => {
+    if (pickedDow == null || !schedule.length) return;
+    const d = schedule.find((x) => x.dayOfWeek === pickedDow);
+    if (!d || !canPickUp(d, flags)) setPickedDow(null);
+  }, [schedule, pickedDow, flags]);
   const hasOverrides = schedule.some((d) => d.isOverridden);
   const hasAnyActive = schedule.some((d) => d.dayType !== "rest");
 
