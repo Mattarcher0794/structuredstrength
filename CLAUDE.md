@@ -149,9 +149,13 @@ Note: exercise_name_snapshot preserves name at log time — protects history if 
 **session_exercise_swaps**
 Per-session exercise substitutions — written when user swaps an exercise mid-workout.
 
-**phase_day_overrides**
+**phase_day_overrides** — LEGACY / no longer read by the app (replaced by `week_day_assignments`). Table still exists; retire in a future migration.
 id, phase_id, user_id, week_start_date (date, always Monday), original_day_of_week (int 1-7), overridden_day_of_week (int 1-7), created_at
 UNIQUE INDEX on (phase_id, user_id, week_start_date, original_day_of_week)
+
+**week_day_assignments** — Week Editor. ABSOLUTE per-calendar-day assignment for a week.
+id, user_id, phase_id, week_start_date (date, always Monday), day_of_week (smallint 1-7 — the calendar slot), source_day_of_week (smallint 1-7 or NULL=rest — the template day whose workout occupies the slot), created_at
+UNIQUE (user_id, phase_id, week_start_date, day_of_week). Owner-only RLS. Reset a week = delete its rows.
 
 **profiles**
 user_id, display_name, default_rest_seconds
@@ -199,7 +203,8 @@ src/
 │   ├── client.ts               — Supabase client singleton
 │   └── types.ts                — Auto-generated DB types (do not edit)
 ├── lib/
-│   ├── weekUtils.ts            — Date/week helpers (Mon-based weeks)
+│   ├── weekUtils.ts            — Date/week helpers (Mon-based weeks, tz-safe)
+│   ├── weekSchedule.ts         — Week Editor resolver: resolveWeekSchedule/planMove/diffAssignments/eligibility (pure, tested)
 │   ├── pbDetection.ts          — Live PB detection during workout
 │   ├── historyPBDetection.ts   — PB detection for history views
 │   ├── exerciseMatching.ts     — Fuzzy-match AI exercise names to DB
@@ -212,7 +217,7 @@ src/
     ├── BottomNav.tsx            — 4 tabs: Today, Phases, History, Profile
     ├── BottomSheet.tsx          — Shared bottom sheet (React Portal)
     ├── WeekStrip.tsx            — 14-day scrollable calendar strip
-    ├── MoveWorkoutSheet.tsx     — Workout reschedule bottom sheet
+    ├── WeekDayCard.tsx          — Week Editor day-row (pick/place/target/locked states)
     ├── DayPeekSheet.tsx         — Day tap bottom sheet
     ├── ExerciseSearch.tsx       — Full-screen exercise search overlay
     └── ui/                      — shadcn/ui primitives (do not touch)
@@ -236,6 +241,7 @@ src/
 | /profile | Profile.tsx | Name, rest timer, sign out, passcode-gated Developer access |
 | /auth | Auth.tsx | Sign in / sign up |
 | /weight | WeightTracker.tsx | Weight log: line chart (Recharts), log weight bottom sheet, weight history list |
+| /week | WeekEditor.tsx | Week Editor — full-screen rearrange-your-week (tap-to-pick / tap-to-place: rest target = move, active target = swap), "Reset week to plan" |
 | /progress-photos | ProgressPhotos.tsx | Progress photos: scrollable timeline grid, guided 3-step check-in flow |
 | /progress-photos/compare/:angle | ProgressPhotosCompare.tsx | Full screen photo viewer: single angle across dates, side-by-side comparison mode |
 
@@ -247,28 +253,18 @@ src/
 useAuth.tsx wraps onAuthStateChange. App.tsx ProtectedRoutes guard redirects to /auth when user is null.
 
 ### Phase & Scheduling
-A Phase contains 7 phase_days (one per weekday). Today.tsx resolves the active workout by fetching phase_days + phase_day_overrides for current and next week, computing a 14-entry effectiveWeekSchedule.
+A Phase contains 7 phase_days (one per weekday). Today.tsx computes a 14-entry effectiveWeekSchedule via the shared `resolveWeekSchedule` (src/lib/weekSchedule.ts), fetching phase_days + week_day_assignments for current and next week.
 
-### Phase Day Overrides
-Non-destructive weekly schedule swap. Phase template never modified. Overrides reset each week.
+### Week Editor (schedule rearranging)
+Non-destructive weekly rearrange. Phase template never modified; assignments reset each week. Single source of truth: `src/lib/weekSchedule.ts` (pure, unit-tested), consumed by Today, WeekStrip, and the WeekEditor page (`/week`). Replaces the old phase_day_overrides system (see move-workout-{requirements,architecture,ux-spec}.md in _bmad-output/planning-artifacts).
 
-Reading logic per day:
-1. Inbound override (another day moved TO this day) — use that phase_day
-2. Outbound override (this day moved AWAY) — treat as rest
-3. Neither — use phase template
+Model: each `week_day_assignments` row is ABSOLUTE — "calendar-day D shows template day S's workout (or rest)". No directional deltas, so chained moves cannot corrupt.
 
-**resolveOriginalDow(effectiveDow, overrides)** — traces through existing overrides before writing new rows. Critical — prevents chain corruption.
+- `resolveWeekSchedule(weekStart, phaseDays, assignments, today)` → `EffectiveDay[]`. A self-referential row (source === slot) resolves to template (not overridden). Fixes the old `isToday` reference-equality bug.
+- `planMove(sourceDow, targetDow, schedule)` → rows to write. Rest target = move (source→rest); active target = swap. `diffAssignments()` splits into upserts + deletes (slots restored to template are deleted, keeping "0 rows = pure plan"). Reset week = delete all rows for the week.
+- Eligibility (`canPickUp`/`canDrop`): source = active + not completed + not in-progress (today, future, OR missed/past all pickable); target = today-or-future + not completed + not in-progress; a missed (past) source can only MOVE onto a rest day (swap needs both today-or-later).
 
-Swap rules:
-- Scenario A (active→active): write 2 rows
-- Scenario B (active→rest): write 1 row only
-- Rest days cannot initiate swaps
-- Swaps are week-contained
-- Completed days cannot be swapped
-- Past days cannot be swap targets
-- Today IS a valid swap target (>= comparison, not >)
-
-Home screen fetches overrides for current + next week. Re-fetches both after any swap.
+UX: full-screen `/week`, tap-to-pick / tap-to-place. Entry via "Rearrange week" by the WeekStrip and DayPeekSheet "Move this workout" (pre-arms the tapped day via router state). Reset via ConfirmBottomSheet.
 
 ### Active Workout Flow
 ActiveWorkout.tsx: ActiveExerciseCard + InactiveExerciseCard. Logging a set: inserts session_sets → getPreviousBest() → rest timer starts. EditableSetPill for post-log edits. Swap writes to session_exercise_swaps.
@@ -332,9 +328,11 @@ Props: isOpen, onClose, title, children. No X — tap outside to dismiss. Z-inde
 
 Keyboard awareness: uses `visualViewport` resize/scroll listener to detect virtual keyboard height (`window.innerHeight - visualViewport.height`) and applies it as a `bottom` offset on the sheet, lifting it above the keyboard. Falls back gracefully if `visualViewport` is unavailable. This pattern is already in place — any new sheet with inputs gets it for free.
 
-1. MoveWorkoutSheet — today + future uncompleted days, same week. Confirmation step before writing.
-2. DayPeekSheet — tapped day detail. "Move this workout" CTA on eligible days.
-3. Pick a workout — rest day train anyway flow.
+1. DayPeekSheet — tapped day detail. "Move this workout" CTA opens the Week Editor (`/week`) pre-armed.
+2. Pick a workout — rest day train anyway flow.
+3. ConfirmBottomSheet — used by the Week Editor "Reset week to plan".
+
+(Workout rescheduling is now the full-screen Week Editor `/week`, not a bottom sheet — MoveWorkoutSheet retired.)
 
 ---
 
@@ -368,7 +366,7 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 ---
 
 ## PENDING WORK (priority order)
-1. Move workout fix — allow today as valid swap target (scoped, ready to build)
+1. ~~Move workout fix~~ — DONE (2026-07-13): rebuilt from scratch as the Week Editor (`/week`, `week_day_assignments`, shared `weekSchedule.ts` resolver). NOTE: not yet verified end-to-end on device; Supabase `types.ts` not yet regenerated (WeekEditor/Today use a documented `as any` for `week_day_assignments`).
 2. Onboarding — stepped flow: experience / goal / days / equipment / injuries — AI generates phase
 3. Rest day "Train anyway" consolidation — replace with override mechanic
 4. Phase completion flow
@@ -420,7 +418,7 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 ## KNOWN ISSUES / PARKED
 - iOS Safari ignores enterKeyHint — keyboard return key label uncontrollable on iOS PWA
 - "Train anyway" and override mechanic are two separate systems (consolidation deferred)
-- Sunday excluded as swap target when today is Sunday
+- ~~Sunday excluded as swap target when today is Sunday~~ — FIXED (weekUtils Sunday boundary + tz-safe formatting; also fixed getNextWeekStartDate returning Sunday not Monday in BST)
 - Lovable preview env vars not yet migrated to Lovable settings (currently relying on committed .env)
 - `@capacitor/preferences` in package.json is unused — can be removed when convenient
 - Capacitor iOS auth untestable on work-managed Mac — Netskope MDM intercepts TLS from both the iOS simulator and physical devices tethered to this Mac. Use Victoria's device or a personal iPhone (not via this Mac's Xcode) to validate iOS auth end-to-end
@@ -431,4 +429,4 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-07-13 | feat/week-editor | week_day_assignments.sql, src/lib/weekSchedule.ts, src/lib/weekUtils.ts | Move Workout rebuild slice 1 (foundation, no UI) — new week_day_assignments table + RLS, pure weekSchedule.ts resolver, weekUtils Sunday/tz fix, 19 tests. Migration NOT yet applied to live DB |
+| 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model (chained moves can't corrupt), shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration applied to live DB. Not yet verified on device; types.ts not regenerated |
