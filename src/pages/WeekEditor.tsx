@@ -18,11 +18,6 @@ import {
 import { WeekDayCard, type WeekDayCardState } from "@/components/WeekDayCard";
 import ConfirmBottomSheet from "@/components/ConfirmBottomSheet";
 
-// week_day_assignments isn't in the generated Supabase types until the migration
-// is applied and types are regenerated. Cast narrowly until then.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sb = supabase as any;
-
 export default function WeekEditor() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -74,7 +69,7 @@ export default function WeekEditor() {
   const { data: assignments = [] } = useQuery<WeekAssignment[]>({
     queryKey: ["week-assignments", user?.id, activePhase?.id, weekStart],
     queryFn: async () => {
-      const { data } = await sb
+      const { data } = await supabase
         .from("week_day_assignments")
         .select("day_of_week, source_day_of_week")
         .eq("user_id", user!.id)
@@ -181,7 +176,7 @@ export default function WeekEditor() {
       const { upserts, deleteDows } = diffAssignments(planMove(source.dayOfWeek, target.dayOfWeek, schedule));
 
       if (deleteDows.length) {
-        const { error } = await sb
+        const { error } = await supabase
           .from("week_day_assignments")
           .delete()
           .eq("user_id", user.id)
@@ -197,7 +192,7 @@ export default function WeekEditor() {
           phase_id: activePhase.id,
           week_start_date: weekStart,
         }));
-        const { error } = await sb
+        const { error } = await supabase
           .from("week_day_assignments")
           .upsert(rows, { onConflict: "user_id,phase_id,week_start_date,day_of_week" });
         if (error) throw error;
@@ -219,7 +214,7 @@ export default function WeekEditor() {
     if (!user || !activePhase) return;
     setSaving(true);
     try {
-      const { error } = await sb
+      const { error } = await supabase
         .from("week_day_assignments")
         .delete()
         .eq("user_id", user.id)

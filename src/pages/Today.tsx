@@ -22,11 +22,6 @@ import { DayPeekSheet } from "@/components/DayPeekSheet";
 
 export type EffectiveDaySchedule = EffectiveDay;
 
-// week_day_assignments isn't in the generated Supabase types until they are
-// regenerated (needs `supabase login` + link). Cast narrowly until then.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sb = supabase as any;
-
 function getDayOfWeek(): number {
   const day = new Date().getDay();
   return day === 0 ? 7 : day;
@@ -192,7 +187,7 @@ export default function Today() {
   const { data: allAssignments = [] } = useQuery({
     queryKey: ["week-assignments", user?.id, activePhase?.id, weekStartDate, nextWeekStartDate],
     queryFn: async () => {
-      const { data } = await sb
+      const { data } = await supabase
         .from("week_day_assignments")
         .select("day_of_week, source_day_of_week, week_start_date")
         .eq("user_id", user!.id)
