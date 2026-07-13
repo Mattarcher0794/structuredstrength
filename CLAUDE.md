@@ -205,6 +205,7 @@ src/
 ├── lib/
 │   ├── weekUtils.ts            — Date/week helpers (Mon-based weeks, tz-safe)
 │   ├── weekSchedule.ts         — Week Editor resolver: resolveWeekSchedule/planMove/diffAssignments/eligibility (pure, tested)
+│   ├── streak.ts               — computeSessionStreak: on-plan streak (rest-forgiving), reuses resolveWeekSchedule (pure, tested)
 │   ├── pbDetection.ts          — Live PB detection during workout
 │   ├── historyPBDetection.ts   — PB detection for history views
 │   ├── exerciseMatching.ts     — Fuzzy-match AI exercise names to DB
@@ -285,7 +286,7 @@ aiPlanService.ts → suggest-plan Edge Function (with user history context) → 
 
 ## HOME SCREEN LAYOUT
 1. Greeting (time-aware + first name, large serif font)
-2. THIS WEEK card: "X of Y sessions complete", progress bar, "X sessions left"
+2. THIS WEEK card: "X of Y sessions complete", progress bar, "X sessions left". Header shows an on-plan streak badge (Flame + count, primary pill, only when ≥1); bottom line becomes an "on a roll" nudge at streak ≥3. Streak = consecutive completed scheduled sessions (rest-forgiving) via `src/lib/streak.ts`.
 3. WeekStrip (14-day)
 4. Today workout card: phase name + week indicator + progress bar + workout name + exercise count pill
    - Strength: "Start workout →" + "↔ Move workout"
@@ -437,6 +438,7 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
+| 2026-07-13 | feat/today-momentum | src/lib/streak.ts, src/pages/Today.tsx | UX momentum (WS-D) — on-plan streak (rest-forgiving computeSessionStreak, reuses resolveWeekSchedule; 7 tests) surfaced as a Flame badge on the "This week" card + an "on a roll" nudge at 3+. Rest days never break it |
 | 2026-07-13 | feat/micro-interactions | src/lib/motion.ts, src/pages/ActiveWorkout.tsx | UX micro-interactions (WS-B) — shared reduced-motion-aware motion presets; set pills pop-in on log / animate out on delete (AnimatePresence); rest timer gains a depleting circular progress ring |
 | 2026-07-13 | feat/ux-consistency-foundation | index.css, BackBar.tsx, WorkoutDetail/Profile/History/WeekStrip/+more | UX consistency foundation (WS-A) — accent colour CSS tokens (--pb-gold/--cardio/--strava) replacing hardcoded hex; shared BackBar component; destructive confirms standardised on ConfirmBottomSheet; WorkoutDetail loading skeleton; #C4899A→primary cleanup |
 | 2026-07-13 | feat/add-delete-sets | src/pages/ActiveWorkout.tsx | Add & delete sets mid-workout — "+ Add a set" for bonus sets past the prescription; long-press a set pill to delete instantly (Undo toast), which renumbers remaining sets 1..N and recomputes the live PB trophy. Session-only; reuses pickBestSet |

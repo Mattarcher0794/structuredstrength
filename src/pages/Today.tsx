@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles, ArrowLeftRight } from "lucide-react";
+import { Dumbbell, ChevronRight, ChevronDown, Sun, Zap, CalendarHeart, Loader2, Check, Sparkles, ArrowLeftRight, Flame } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useState, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
@@ -16,7 +16,8 @@ import { findMatchingExercise } from "@/lib/exerciseMatching";
 import { insertAIExercise } from "@/lib/exerciseInsert";
 import { BottomSheet } from "@/components/BottomSheet";
 import { getWeekStartDate, getNextWeekStartDate } from "@/lib/weekUtils";
-import { resolveWeekSchedule, type EffectiveDay } from "@/lib/weekSchedule";
+import { resolveWeekSchedule, type EffectiveDay, type WeekAssignment } from "@/lib/weekSchedule";
+import { computeSessionStreak } from "@/lib/streak";
 import { WeekStrip } from "@/components/WeekStrip";
 import { DayPeekSheet } from "@/components/DayPeekSheet";
 
@@ -309,6 +310,47 @@ export default function Today() {
 
   const plannedSessionCount = allPhaseDays?.filter(d => d.day_type === "strength" || d.day_type === "cardio").length ?? 0;
   const remainingCount = Math.max(plannedSessionCount - weeklyCompletedCount, 0);
+
+  // On-plan streak (phase-wide) — sessions completed without missing a scheduled one.
+  const { data: phaseCompletedDates = new Set<string>() } = useQuery({
+    queryKey: ["phase-completed-dates", user?.id, activePhase?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("date")
+        .eq("user_id", user!.id)
+        .eq("phase_id", activePhase!.id)
+        .eq("status", "completed");
+      return new Set((data ?? []).map((d) => d.date as string));
+    },
+    enabled: !!user && !!activePhase,
+  });
+
+  const { data: phaseAssignments = [] } = useQuery({
+    queryKey: ["phase-assignments", user?.id, activePhase?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("week_day_assignments")
+        .select("day_of_week, source_day_of_week, week_start_date")
+        .eq("user_id", user!.id)
+        .eq("phase_id", activePhase!.id);
+      return data ?? [];
+    },
+    enabled: !!user && !!activePhase,
+  });
+
+  const assignmentsByWeek = useMemo(() => {
+    const map: Record<string, WeekAssignment[]> = {};
+    for (const a of phaseAssignments) {
+      (map[a.week_start_date] ??= []).push({ day_of_week: a.day_of_week, source_day_of_week: a.source_day_of_week });
+    }
+    return map;
+  }, [phaseAssignments]);
+
+  const streak = useMemo(() => {
+    if (!activePhase || !allPhaseDays?.length) return 0;
+    return computeSessionStreak(today, activePhase.start_date ?? null, allPhaseDays, assignmentsByWeek, phaseCompletedDates);
+  }, [activePhase, allPhaseDays, assignmentsByWeek, phaseCompletedDates, today]);
   const sessionWord = (n: number) => n === 1 ? "session" : "sessions";
 
   const { data: profile } = useQuery({
@@ -620,7 +662,14 @@ export default function Today() {
       }
       {activePhase &&
       <div className="mb-6 rounded-2xl bg-card border border-border p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">This week</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">This week</p>
+            {streak >= 1 &&
+            <span className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <Flame className="h-3 w-3" /> {streak}
+            </span>
+            }
+          </div>
           <p className="text-sm font-medium">
             {weeklyCompletedCount <= plannedSessionCount ?
           `${weeklyCompletedCount} of ${plannedSessionCount} ${sessionWord(plannedSessionCount)} complete` :
@@ -633,7 +682,9 @@ export default function Today() {
 
         }
           <p className="mt-2 text-xs text-muted-foreground">
-            {weeklyCompletedCount < plannedSessionCount ?
+            {streak >= 3 ?
+          `On a roll — ${streak} sessions on plan` :
+          weeklyCompletedCount < plannedSessionCount ?
           `${remainingCount} ${sessionWord(remainingCount)} left this week` :
           weeklyCompletedCount === plannedSessionCount ?
           "You've completed all planned sessions this week" :
