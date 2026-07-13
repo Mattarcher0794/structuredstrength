@@ -375,15 +375,18 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 ---
 
 ## PENDING WORK (priority order)
-1. ~~Move workout fix~~ — DONE (2026-07-13): rebuilt from scratch as the Week Editor (`/week`, `week_day_assignments`, shared `weekSchedule.ts` resolver). `types.ts` regenerated, `as any` bridges removed. NOTE: still not verified end-to-end on a real device/browser (local auth is Netskope-blocked — verify on a Vercel preview or Victoria's device).
-2. Onboarding — stepped flow: experience / goal / days / equipment / injuries — AI generates phase
-3. Rest day "Train anyway" consolidation — replace with override mechanic
-4. Phase completion flow
-5. Branded email via Resend custom SMTP
-6. Error states audit
-7. Empty states audit
-8. Stabilise env var setup — move to Lovable project settings, create .env.example
-9. HealthKit integration planning (Capacitor iOS wrapper is now live — see CAPACITOR iOS section)
+1. **Rotate exposed secrets (SECURITY)** — the Supabase access token + Anthropic API key were exposed in a shared screenshot (2026-07-13). Revoke + regenerate both (Supabase dashboard → Access Tokens; Anthropic console → API Keys), update `~/StructuredStrength-migration-export/.secrets`, and reset the `suggest-plan` Edge Function's `ANTHROPIC_API_KEY`. User deferred — still outstanding.
+2. WS-C — unify "Train anyway" vs Week Editor (last UX-review workstream). Reconcile `is_schedule_override` sessions with `week_day_assignments`; **needs Bruce Banner to scope the data model first**. See `_bmad-output/planning-artifacts/ux-improvements-plan.md`.
+3. UX polish follow-ups (deferred from the review): micro-animations (exercise-complete settle, day-done tick, stat count-ups, list stagger); tokenize the gold-tint PB backgrounds (#FFFBEB / rgba(184,134,11,·)) + the off-brand rose-300 progress bar; card-padding consistency pass.
+4. Onboarding — stepped flow: experience / goal / days / equipment / injuries — AI generates phase
+5. Phase completion flow
+6. Branded email via Resend custom SMTP
+7. Error states audit
+8. Empty states audit
+9. Env var setup — `.env` is currently TRACKED in git (public-safe anon key + URL only); untrack via `git rm --cached .env` (now gitignored). Verify `.env.example`.
+10. HealthKit integration planning (Capacitor iOS wrapper is live — see CAPACITOR iOS section)
+
+Done this session (2026-07-13, all in prod): Move Workout → Week Editor rebuild, PB tracking fix, add/delete sets, and the UX review's WS-A (consistency), WS-B (micro-interactions), WS-D (Today momentum). See `_bmad-output/session-summary-2026-07-13.md`.
 
 ---
 
