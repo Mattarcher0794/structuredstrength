@@ -19,6 +19,7 @@ import Profile from "@/pages/Profile";
 import Developer from "@/pages/Developer";
 import ExerciseApiSearch from "@/pages/ExerciseApiSearch";
 import WeightTracker from "@/pages/WeightTracker";
+import WeekEditor from "@/pages/WeekEditor";
 import ProgressPhotos from "@/pages/ProgressPhotos";
 import ProgressPhotosCompare from "@/pages/ProgressPhotosCompare";
 import StravaCallback from "@/pages/StravaCallback";
@@ -54,6 +55,7 @@ function ProtectedRoutes() {
         <Route path="profile/developer/exercise-api" element={<ExerciseApiSearch />} />
       </Route>
       <Route path="weight" element={<WeightTracker />} />
+      <Route path="week" element={<WeekEditor />} />
       <Route path="progress-photos" element={<ProgressPhotos />} />
       <Route path="progress-photos/compare/:angle" element={<ProgressPhotosCompare />} />
       <Route path="strava/callback" element={<StravaCallback />} />
