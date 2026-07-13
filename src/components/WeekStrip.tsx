@@ -117,12 +117,12 @@ export function WeekStrip({ schedule, allPhaseDays, completedDates, onDayTap }: 
               ) : day.isToday && (day.dayType === "strength" || day.dayType === "cardio") ? (
                 <span
                   className="block w-[6px] h-[6px] rounded-full border"
-                  style={{ borderColor: day.dayType === "cardio" ? "#A8D4E0" : "hsl(var(--primary))" }}
+                  style={{ borderColor: day.dayType === "cardio" ? "var(--cardio)" : "hsl(var(--primary))" }}
                 />
               ) : day.dayType === "strength" ? (
                 <span className="block w-[6px] h-[6px] rounded-full bg-primary" />
               ) : day.dayType === "cardio" ? (
-                <span className="block w-[6px] h-[6px] rounded-full" style={{ backgroundColor: "#A8D4E0" }} />
+                <span className="block w-[6px] h-[6px] rounded-full" style={{ backgroundColor: "var(--cardio)" }} />
               ) : (
                 <span className="block w-[6px] h-[6px] rounded-full bg-muted-foreground/20" />
               )}

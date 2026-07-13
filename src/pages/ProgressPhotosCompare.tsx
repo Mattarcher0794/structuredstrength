@@ -159,7 +159,7 @@ export default function ProgressPhotosCompare() {
             <div
               key={i}
               className={`h-2 w-2 rounded-full transition-colors ${
-                i === compareIndex ? "bg-[#C4899A]" : "bg-white/30"
+                i === compareIndex ? "bg-primary" : "bg-white/30"
               }`}
             />
           ))}
@@ -220,7 +220,7 @@ export default function ProgressPhotosCompare() {
         {canCompare && (
           <button
             onClick={() => setIsComparing(true)}
-            className="w-full py-3 rounded-full bg-[#C4899A] text-white text-sm font-medium active:opacity-80 transition-opacity"
+            className="w-full py-3 rounded-full bg-primary text-white text-sm font-medium active:opacity-80 transition-opacity"
           >
             Compare
           </button>
@@ -231,7 +231,7 @@ export default function ProgressPhotosCompare() {
           <div
             key={i}
             className={`h-2 w-2 rounded-full transition-colors ${
-              i === currentIndex ? "bg-[#C4899A]" : "bg-white/30"
+              i === currentIndex ? "bg-primary" : "bg-white/30"
             }`}
           />
         ))}

@@ -37,7 +37,7 @@ export function DayPeekSheet({
       );
     if (day.dayType === "cardio")
       return (
-        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium" style={{ backgroundColor: "rgba(168,212,224,0.2)", color: "#5a9bae" }}>
+        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-medium" style={{ backgroundColor: "var(--cardio-soft)", color: "var(--cardio-foreground)" }}>
           Cardio
         </span>
       );

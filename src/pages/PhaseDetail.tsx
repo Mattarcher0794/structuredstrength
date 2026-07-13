@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronRight, Copy, Loader2, Sparkles } from "lucide-react";
+import { ChevronRight, Copy, Loader2, Sparkles } from "lucide-react";
+import { BackBar } from "@/components/BackBar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -275,9 +276,7 @@ export default function PhaseDetail() {
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6">
-      <button onClick={() => navigate("/phases")} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-        <ArrowLeft className="h-4 w-4" /> Phases
-      </button>
+      <BackBar label="Phases" onClick={() => navigate("/phases")} />
 
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-semibold">{phase.name}</h1>

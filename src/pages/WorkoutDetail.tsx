@@ -3,18 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Trophy, Trash2 } from "lucide-react";
+import { Check, Trophy, Trash2 } from "lucide-react";
+import { BackBar } from "@/components/BackBar";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmBottomSheet from "@/components/ConfirmBottomSheet";
 import { Button } from "@/components/ui/button";
 import { format, differenceInMinutes } from "date-fns";
 import { detectSetPBs } from "@/lib/historyPBDetection";
@@ -28,6 +20,21 @@ function StatItem({ value, label }: { value: string; label: string }) {
   );
 }
 
+function WorkoutDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
+      <div className="h-5 w-20 mb-4 rounded bg-muted animate-pulse" />
+      <div className="h-6 w-40 mb-2 rounded bg-muted animate-pulse" />
+      <div className="h-4 w-56 mb-4 rounded bg-muted animate-pulse" />
+      <div className="h-16 mb-6 rounded-2xl bg-muted animate-pulse" />
+      <div className="space-y-4">
+        <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+        <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function WorkoutDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -35,7 +42,7 @@ export default function WorkoutDetail() {
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const { data: session } = useQuery({
+  const { data: session, isLoading } = useQuery({
     queryKey: ["workout-detail", sessionId],
     queryFn: async () => {
       const { data } = await supabase
@@ -94,6 +101,7 @@ export default function WorkoutDetail() {
     },
   });
 
+  if (isLoading) return <WorkoutDetailSkeleton />;
   if (!session) return null;
 
   const duration = session.completed_at && session.started_at
@@ -114,9 +122,7 @@ export default function WorkoutDetail() {
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
-      <button onClick={() => navigate("/history")} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-        <ArrowLeft className="h-4 w-4" /> History
-      </button>
+      <BackBar label="History" onClick={() => navigate("/history")} />
 
       <h1 className="text-xl font-semibold">{session.phase_days?.workout_name || "Workout"}</h1>
       <p className="text-sm text-muted-foreground mb-4">
@@ -141,8 +147,8 @@ export default function WorkoutDetail() {
       {/* PB callout */}
       {hasPBs && (
         <div className="flex items-center gap-2 mb-6 px-1">
-          <Trophy className="h-3.5 w-3.5" style={{ color: "#B8860B" }} />
-          <span className="text-xs" style={{ color: "#B8860B" }}>Personal bests in this session</span>
+          <Trophy className="h-3.5 w-3.5" style={{ color: "var(--pb-gold)" }} />
+          <span className="text-xs" style={{ color: "var(--pb-gold)" }}>Personal bests in this session</span>
         </div>
       )}
       {!hasPBs && <div className="mb-6" />}
@@ -157,7 +163,7 @@ export default function WorkoutDetail() {
                 return (
                   <div key={s.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                     {isPB ? (
-                      <Trophy className="h-3 w-3" style={{ color: "#B8860B" }} />
+                      <Trophy className="h-3 w-3" style={{ color: "var(--pb-gold)" }} />
                     ) : (
                       <Check className="h-3.5 w-3.5 text-primary" />
                     )}
@@ -181,26 +187,17 @@ export default function WorkoutDetail() {
         Delete workout
       </Button>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this session and all logged sets. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmBottomSheet
+        open={showDeleteDialog}
+        title="Delete this workout?"
+        description="This will permanently delete this session and all logged sets. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+        onCancel={() => setShowDeleteDialog(false)}
+      />
     </div>
   );
 }
