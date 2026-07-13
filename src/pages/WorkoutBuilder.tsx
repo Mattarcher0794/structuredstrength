@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical } from "lucide-react";
+import { BackBar } from "@/components/BackBar";
 import ExerciseSearch from "@/components/ExerciseSearch";
 import ExerciseConfigCard from "@/components/ExerciseConfigCard";
 
@@ -80,9 +81,7 @@ export default function WorkoutBuilder() {
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
-      <button onClick={() => navigate(`/phases/${phaseId}`)} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-        <ArrowLeft className="h-4 w-4" /> Back to phase
-      </button>
+      <BackBar label="Phase" onClick={() => navigate(`/phases/${phaseId}`)} />
 
       <div className="mb-6">
         <Input

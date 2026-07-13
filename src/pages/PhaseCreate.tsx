@@ -6,7 +6,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { BackBar } from "@/components/BackBar";
 import { findMatchingExercise } from "@/lib/exerciseMatching";
 import { insertAIExercise } from "@/lib/exerciseInsert";
 import { fetchUserHistory, callSuggestPlan } from "@/lib/aiPlanService";
@@ -142,9 +143,7 @@ export default function PhaseCreate() {
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-muted-foreground mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </button>
+      <BackBar label="Back" onClick={() => navigate(-1)} />
 
       <h1 className="text-2xl font-semibold mb-6">New phase</h1>
 

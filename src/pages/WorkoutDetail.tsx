@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Trophy, Trash2 } from "lucide-react";
+import { Check, Trophy, Trash2 } from "lucide-react";
+import { BackBar } from "@/components/BackBar";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -114,9 +115,7 @@ export default function WorkoutDetail() {
 
   return (
     <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
-      <button onClick={() => navigate("/history")} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-        <ArrowLeft className="h-4 w-4" /> History
-      </button>
+      <BackBar label="History" onClick={() => navigate("/history")} />
 
       <h1 className="text-xl font-semibold">{session.phase_days?.workout_name || "Workout"}</h1>
       <p className="text-sm text-muted-foreground mb-4">
