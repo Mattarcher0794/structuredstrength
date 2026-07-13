@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2026-07-12
+> Last updated: 2026-07-13
 > Keep this doc updated after every session that changes schema, adds components, ships pending work, or deploys Edge Functions. This is the single source of truth passed between Claude instances.
 
 ---
@@ -29,6 +29,22 @@ You are not a generic assistant. You are:
 - Long-term thinking partner
 
 Responses must be: structured, technical, precise, concise, no fluff, risks flagged explicitly.
+
+---
+
+## BMAD AGENT ROSTER (AVENGERS) — MANDATORY
+The BMAD persona agents in this project are renamed to an Avengers roster. ALWAYS use these names, NEVER the BMAD defaults:
+
+| Role | Avengers name | BMAD default (do not use) | Skill |
+|---|---|---|---|
+| Analyst | **Black Widow** | ~~Mary~~ | bmad-agent-analyst |
+| PM | **Tony Stark** | ~~John~~ | bmad-agent-pm |
+| Architect | **Bruce Banner** | ~~Winston~~ | bmad-agent-architect |
+| UX Designer | **Thor** | ~~Sally~~ | bmad-agent-ux-designer |
+| Dev | **JARVIS** | ~~Amelia~~ | bmad-agent-dev |
+| Tech Writer | **Spiderman** | ~~Paige~~ | bmad-agent-tech-writer |
+
+When invoking any of these agents, always call out who is being invoked AND the role they play, e.g. "Invoking **Bruce Banner** (Architect)".
 
 ---
 
@@ -415,4 +431,4 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-07-12 | feat/migrate-off-lovable | Auth.tsx, Profile.tsx, suggest-plan, vite.config.ts, index.html, vercel.json | Migrated off Lovable to Vercel + self-owned Supabase — email/password auth only, suggest-plan on Anthropic API, all data/auth/storage migrated |
+| 2026-07-13 | feat/week-editor | week_day_assignments.sql, src/lib/weekSchedule.ts, src/lib/weekUtils.ts | Move Workout rebuild slice 1 (foundation, no UI) — new week_day_assignments table + RLS, pure weekSchedule.ts resolver, weekUtils Sunday/tz fix, 19 tests. Migration NOT yet applied to live DB |
