@@ -20,6 +20,21 @@ function StatItem({ value, label }: { value: string; label: string }) {
   );
 }
 
+function WorkoutDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-lg px-5 pt-6 pb-24">
+      <div className="h-5 w-20 mb-4 rounded bg-muted animate-pulse" />
+      <div className="h-6 w-40 mb-2 rounded bg-muted animate-pulse" />
+      <div className="h-4 w-56 mb-4 rounded bg-muted animate-pulse" />
+      <div className="h-16 mb-6 rounded-2xl bg-muted animate-pulse" />
+      <div className="space-y-4">
+        <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+        <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function WorkoutDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -27,7 +42,7 @@ export default function WorkoutDetail() {
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const { data: session } = useQuery({
+  const { data: session, isLoading } = useQuery({
     queryKey: ["workout-detail", sessionId],
     queryFn: async () => {
       const { data } = await supabase
@@ -86,6 +101,7 @@ export default function WorkoutDetail() {
     },
   });
 
+  if (isLoading) return <WorkoutDetailSkeleton />;
   if (!session) return null;
 
   const duration = session.completed_at && session.started_at
