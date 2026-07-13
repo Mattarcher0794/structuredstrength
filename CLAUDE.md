@@ -216,6 +216,7 @@ src/
     ├── AppLayout.tsx            — Shell: Outlet + AnimatePresence + BottomNav
     ├── BottomNav.tsx            — 4 tabs: Today, Phases, History, Profile
     ├── BottomSheet.tsx          — Shared bottom sheet (React Portal)
+    ├── BackBar.tsx              — Shared back-nav row (one style + convention)
     ├── WeekStrip.tsx            — 14-day scrollable calendar strip
     ├── WeekDayCard.tsx          — Week Editor day-row (pick/place/target/locked states)
     ├── DayPeekSheet.tsx         — Day tap bottom sheet
@@ -357,6 +358,8 @@ Full-screen overlay (not bottom sheet). Slide-up animation. Auto-focused. Multi-
 - Lucide icons throughout
 - No emoji in UI except toasts
 - Tailwind + shadcn
+- Accent CSS tokens (index.css): `--pb-gold`, `--cardio`/`--cardio-foreground`/`--cardio-soft`, `--strava`; primary pink = `--primary`. Use tokens, never hardcode these hex (the canvas-confetti array is the one exception — it needs JS colour strings).
+- Shared components: `BackBar` for back-nav (label = destination); destructive confirmations use `ConfirmBottomSheet` (not AlertDialog).
 
 ---
 
@@ -432,6 +435,7 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
+| 2026-07-13 | feat/ux-consistency-foundation | index.css, BackBar.tsx, WorkoutDetail/Profile/History/WeekStrip/+more | UX consistency foundation (WS-A) — accent colour CSS tokens (--pb-gold/--cardio/--strava) replacing hardcoded hex; shared BackBar component; destructive confirms standardised on ConfirmBottomSheet; WorkoutDetail loading skeleton; #C4899A→primary cleanup |
 | 2026-07-13 | feat/add-delete-sets | src/pages/ActiveWorkout.tsx | Add & delete sets mid-workout — "+ Add a set" for bonus sets past the prescription; long-press a set pill to delete instantly (Undo toast), which renumbers remaining sets 1..N and recomputes the live PB trophy. Session-only; reuses pickBestSet |
 | 2026-07-13 | fix/pb-history-tracking | src/lib/pbDetection.ts, src/pages/ActiveWorkout.tsx | Fixed mid-workout PB tracking being "all over the place" — one shared tested ranking helper (isBetterSet/pickBestSet: heaviest weight, ties by reps); history sheet + live pills now badge exactly ONE best set (by id/setId), reps-aware; removed weight-only getPreviousBest + unused isPersonalBest. 27 tests |
 | 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model, shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration live; types.ts regenerated |
