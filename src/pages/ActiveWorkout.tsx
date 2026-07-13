@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { playRestTimerDing } from "@/lib/restTimerSound";
-import { getPreviousBest } from "@/lib/pbDetection";
+import { getPreviousBestSet, pickBestSet, isBetterSet } from "@/lib/pbDetection";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,10 +58,13 @@ export default function ActiveWorkout() {
     numSets: number; minReps: number; maxReps: number;
   }>>([]);
 
-  // PB tracking — maps exerciseId to best weight achieved this session
+  // PB tracking — maps exerciseId to the single best set this session that beat
+  // the all-time best (identified by setId so exactly one pill gets a trophy).
   const [sessionBests, setSessionBests] = useState<Record<string, {
     exerciseName: string;
     weight: number;
+    reps: number;
+    setId: string;
   }>>({});
 
   const { data: session } = useQuery({
@@ -90,15 +93,22 @@ export default function ActiveWorkout() {
 
   const logSet = useMutation({
     mutationFn: async ({ exerciseId, exerciseName, setNumber, reps, weight, exerciseRestSeconds }: any) => {
-      await supabase.from("session_sets").insert({
+      const { data: inserted } = await supabase.from("session_sets").insert({
         workout_session_id: sessionId!,
         exercise_id: exerciseId,
         exercise_name_snapshot: exerciseName,
         set_number: setNumber,
         reps: parseInt(reps),
         weight: parseFloat(weight) || 0,
-      });
-      return { exerciseRestSeconds, exerciseId, exerciseName, weight: parseFloat(weight) || 0 };
+      }).select("id").single();
+      return {
+        exerciseRestSeconds,
+        exerciseId,
+        exerciseName,
+        weight: parseFloat(weight) || 0,
+        reps: parseInt(reps),
+        setId: inserted?.id as string,
+      };
     },
     onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
@@ -109,16 +119,23 @@ export default function ActiveWorkout() {
       setRestTime(duration);
       setRestRunning(true);
 
-      // PB detection
-      if (data.weight > 0) {
-        const previousBest = await getPreviousBest(data.exerciseId, sessionId!);
-        if (previousBest === null) return; // no history — not a PB
-        const currentSessionBest = sessionBests[data.exerciseId]?.weight ?? null;
-        const effectiveBest = Math.max(previousBest ?? 0, currentSessionBest ?? 0);
-        if (data.weight > effectiveBest) {
+      // PB detection — a trophy marks the single set that beats your all-time best
+      // (heaviest weight, ties broken by reps). No prior history = not a PB.
+      if (data.weight > 0 && data.setId) {
+        const previousBest = await getPreviousBestSet(data.exerciseId, sessionId!);
+        if (previousBest === null) return; // first-ever session for this exercise
+        const candidate = { weight: data.weight, reps: data.reps };
+        const sessionBest = sessionBests[data.exerciseId];
+        const bestSoFar = pickBestSet(sessionBest ? [previousBest, sessionBest] : [previousBest]);
+        if (bestSoFar && isBetterSet(candidate, bestSoFar)) {
           setSessionBests(prev => ({
             ...prev,
-            [data.exerciseId]: { exerciseName: data.exerciseName, weight: data.weight },
+            [data.exerciseId]: {
+              exerciseName: data.exerciseName,
+              weight: data.weight,
+              reps: data.reps,
+              setId: data.setId,
+            },
           }));
         }
       }
@@ -506,7 +523,7 @@ function ActiveExerciseCard({
   minReps: number; maxReps: number; completedSets: any[];
   onLogSet: (setNumber: number, reps: string, weight: string) => void;
   onSwap: () => void; isSwapped: boolean; sessionId: string;
-  sessionPBs: Record<string, { exerciseName: string; weight: number }>;
+  sessionPBs: Record<string, { exerciseName: string; weight: number; reps: number; setId: string }>;
 }) {
   const { user } = useAuth();
   const [reps, setReps] = useState("");
@@ -586,12 +603,8 @@ function ActiveExerciseCard({
   });
 
   // Compute all-time best set and grouped sessions
-  const bestSet = useMemo(() => {
-    if (!historyData || historyData.length === 0) return null;
-    return historyData.reduce((best: any, s: any) =>
-      (s.weight ?? 0) > (best.weight ?? 0) ? s : best
-    , historyData[0]);
-  }, [historyData]);
+  // Best set = heaviest weight, ties broken by reps — shared with the live PB logic.
+  const bestSet = useMemo(() => pickBestSet(historyData ?? []), [historyData]);
 
   const groupedSessions = useMemo(() => {
     if (!historyData) return [];
@@ -656,7 +669,7 @@ function ActiveExerciseCard({
         <div className="flex flex-wrap gap-1.5 mb-4">
           {completedSets.map((s: any) => {
             const pbEntry = sessionPBs[exerciseId];
-            const isPB = !!pbEntry && s.weight === pbEntry.weight;
+            const isPB = !!pbEntry && s.id === pbEntry.setId;
             return (
               <EditableSetPill
                 key={s.id}
@@ -774,7 +787,7 @@ function ActiveExerciseCard({
                   </p>
                   <div className="space-y-1">
                     {group.sets.map((s: any) => {
-                      const isBest = bestSet && s.weight === bestSet.weight && s.reps === bestSet.reps;
+                      const isBest = bestSet && s.id === bestSet.id;
                       return (
                         <div key={s.id} className="flex items-center gap-2 text-sm">
                           <span className="text-gray-400 w-10">Set {s.set_number}</span>
