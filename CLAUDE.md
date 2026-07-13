@@ -267,12 +267,13 @@ Model: each `week_day_assignments` row is ABSOLUTE — "calendar-day D shows tem
 UX: full-screen `/week`, tap-to-pick / tap-to-place. Entry via "Rearrange week" by the WeekStrip and DayPeekSheet "Move this workout" (pre-arms the tapped day via router state). Reset via ConfirmBottomSheet.
 
 ### Active Workout Flow
-ActiveWorkout.tsx: ActiveExerciseCard + InactiveExerciseCard. Logging a set: inserts session_sets → getPreviousBest() → rest timer starts. EditableSetPill for post-log edits. Swap writes to session_exercise_swaps.
+ActiveWorkout.tsx: ActiveExerciseCard + InactiveExerciseCard. Logging a set: inserts session_sets → PB detection (getPreviousBestSet) → rest timer starts. EditableSetPill for post-log edits. Swap writes to session_exercise_swaps.
 Rest timer plays an audio ding (via `restTimerSound.ts`) on both natural countdown to zero and manual skip. Uses Web Audio API — no external packages.
 
 ### PB Detection
-- Live (pbDetection.ts): getPreviousBest(exerciseId, currentSessionId) → MAX(weight) excluding current session. Trophy if weight strictly > effectiveBest AND previousBest not null.
-- History (historyPBDetection.ts): detectSessionPBs() batch scan, detectSetPBs() for WorkoutDetail.
+- Set ranking (single source of truth, pbDetection.ts, unit-tested): `isBetterSet`/`pickBestSet` — heaviest weight, ties broken by more reps. `getPreviousBestSet(exerciseId, currentSessionId)` → best prior set (excludes current session; null = no history = not a PB).
+- Live (ActiveWorkout.tsx): on log, if the set beats the all-time best it's stored in `sessionBests` by `setId`; exactly ONE pill trophy shows (the record-beating set). The mid-workout Exercise History sheet badges exactly one set (`bestSet` via `pickBestSet`, matched by id).
+- History tab (historyPBDetection.ts): detectSessionPBs() batch scan, detectSetPBs() for WorkoutDetail. (Separate module — not touched by the mid-workout fix.)
 
 ### AI Plan System
 aiPlanService.ts → suggest-plan Edge Function (with user history context) → AIPlanSuggestionCard. On accept: exerciseMatching.ts fuzzy-matches, exerciseInsert.ts creates unmatched exercises.
@@ -429,4 +430,5 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
-| 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model (chained moves can't corrupt), shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration applied to live DB; types.ts regenerated (casts removed). Not yet verified on a real device |
+| 2026-07-13 | fix/pb-history-tracking | src/lib/pbDetection.ts, src/pages/ActiveWorkout.tsx | Fixed mid-workout PB tracking being "all over the place" — one shared tested ranking helper (isBetterSet/pickBestSet: heaviest weight, ties by reps); history sheet + live pills now badge exactly ONE best set (by id/setId), reps-aware; removed weight-only getPreviousBest + unused isPersonalBest. 27 tests |
+| 2026-07-13 | feat/week-editor | week_day_assignments.sql, weekSchedule.ts, weekUtils.ts, WeekEditor.tsx, WeekDayCard.tsx, Today.tsx, App.tsx | Rebuilt Move Workout as the full-screen Week Editor (`/week`) — absolute per-day assignment model, shared resolver kills duplicated Today logic + isToday/Sunday/tz bugs, tap-to-pick/place UI, Reset week to plan, MoveWorkoutSheet retired. Migration live; types.ts regenerated |
