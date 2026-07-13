@@ -48,14 +48,14 @@ export default function StravaCallback() {
     >
       {status === "loading" && (
         <>
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#C4899A] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="mt-4 text-sm text-muted-foreground">Connecting your Strava account…</p>
         </>
       )}
 
       {status === "success" && (
         <>
-          <CheckCircle2 className="h-12 w-12" style={{ color: "#C4899A" }} />
+          <CheckCircle2 className="h-12 w-12" style={{ color: "hsl(var(--primary))" }} />
           <p className="mt-4 text-lg font-medium">Strava connected!</p>
         </>
       )}

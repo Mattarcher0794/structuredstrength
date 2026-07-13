@@ -877,7 +877,7 @@ function ActiveExerciseCard({
             <div className="flex items-start gap-3">
               <span className="text-2xl mt-0.5">🏆</span>
               <div>
-                <p className="text-[#C4899A] text-xs uppercase tracking-wider font-semibold">All-Time Best Set</p>
+                <p className="text-primary text-xs uppercase tracking-wider font-semibold">All-Time Best Set</p>
                 <p className="text-lg font-extrabold text-[#1a1714] mt-0.5">
                   {bestSet.reps} reps × {bestSet.weight}kg
                 </p>

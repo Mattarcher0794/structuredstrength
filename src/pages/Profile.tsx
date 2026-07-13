@@ -165,7 +165,7 @@ function StravaIntegration({ userId }: { userId: string | undefined }) {
         <Button
           variant="outline"
           onClick={handleConnect}
-          className="w-full rounded-2xl border-[#C4899A] text-foreground hover:bg-[#C4899A]/5"
+          className="w-full rounded-2xl border-primary text-foreground hover:bg-primary/5"
         >
           Connect Strava
         </Button>
