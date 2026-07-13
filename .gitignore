@@ -26,3 +26,9 @@ dist-ssr
 # Capacitor
 ios/App/Pods/
 ios/.xcode.env.local
+
+# Secrets and env
+.secrets
+.env
+.env.*
+!.env.example
