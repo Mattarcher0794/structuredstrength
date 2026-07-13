@@ -160,6 +160,81 @@ export default function ActiveWorkout() {
     },
   });
 
+  // Renumber an exercise's sets in this session to a contiguous 1..N by time order.
+  const renumberExerciseSets = async (exerciseId: string) => {
+    const { data: sets } = await supabase
+      .from("session_sets")
+      .select("id, set_number")
+      .eq("workout_session_id", sessionId!)
+      .eq("exercise_id", exerciseId)
+      .order("completed_at", { ascending: true });
+    if (!sets) return;
+    await Promise.all(
+      sets.map((s, i) =>
+        s.set_number === i + 1
+          ? Promise.resolve()
+          : supabase.from("session_sets").update({ set_number: i + 1 }).eq("id", s.id),
+      ),
+    );
+  };
+
+  // Recompute the live PB trophy for an exercise from its current session sets.
+  const recomputeSessionBest = async (exerciseId: string, exerciseName: string) => {
+    const clear = () =>
+      setSessionBests((prev) => {
+        const next = { ...prev };
+        delete next[exerciseId];
+        return next;
+      });
+    const previousBest = await getPreviousBestSet(exerciseId, sessionId!);
+    if (!previousBest) return clear();
+    const { data: current } = await supabase
+      .from("session_sets")
+      .select("id, weight, reps")
+      .eq("workout_session_id", sessionId!)
+      .eq("exercise_id", exerciseId);
+    const best = pickBestSet(current ?? []);
+    if (best && isBetterSet(best, previousBest)) {
+      setSessionBests((prev) => ({
+        ...prev,
+        [exerciseId]: { exerciseName, weight: best.weight ?? 0, reps: best.reps ?? 0, setId: best.id },
+      }));
+    } else {
+      clear();
+    }
+  };
+
+  const undoDeleteSet = async (snap: any) => {
+    await supabase.from("session_sets").insert({
+      workout_session_id: sessionId!,
+      exercise_id: snap.exercise_id,
+      exercise_name_snapshot: snap.exercise_name_snapshot,
+      set_number: snap.set_number,
+      reps: snap.reps,
+      weight: snap.weight,
+      completed_at: snap.completed_at,
+    });
+    await renumberExerciseSets(snap.exercise_id);
+    await recomputeSessionBest(snap.exercise_id, snap.exercise_name_snapshot);
+    queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
+  };
+
+  const handleDeleteSet = async (set: any) => {
+    const snap = {
+      exercise_id: set.exercise_id,
+      exercise_name_snapshot: set.exercise_name_snapshot,
+      set_number: set.set_number,
+      reps: set.reps,
+      weight: set.weight,
+      completed_at: set.completed_at,
+    };
+    await supabase.from("session_sets").delete().eq("id", set.id);
+    await renumberExerciseSets(set.exercise_id);
+    await recomputeSessionBest(set.exercise_id, set.exercise_name_snapshot);
+    queryClient.invalidateQueries({ queryKey: ["session-sets", sessionId] });
+    toast("Set deleted", { action: { label: "Undo", onClick: () => { void undoDeleteSet(snap); } } });
+  };
+
   // Rest timer effect
   useEffect(() => {
     if (!restRunning) return;
@@ -239,6 +314,7 @@ export default function ActiveWorkout() {
                   setSwapMovementPattern(pde.exercises?.movement_pattern || "");
                 }}
                 isSwapped={swaps.some((s: any) => s.original_exercise_id === pde.exercise_id)}
+                onDeleteSet={handleDeleteSet}
               />
             ) : (
               <InactiveExerciseCard
@@ -273,6 +349,7 @@ export default function ActiveWorkout() {
                 sessionPBs={sessionBests}
                 onSwap={() => {}}
                 isSwapped={false}
+                onDeleteSet={handleDeleteSet}
               />
             ) : (
               <InactiveExerciseCard
@@ -379,6 +456,7 @@ function EditableSetPill({
   onCancelEdit,
   sessionId,
   isPB,
+  onDelete,
 }: {
   set: any;
   isEditing: boolean;
@@ -386,6 +464,7 @@ function EditableSetPill({
   onCancelEdit: () => void;
   sessionId: string;
   isPB: boolean;
+  onDelete: () => void;
 }) {
   const queryClient = useQueryClient();
   const [editReps, setEditReps] = useState(String(set.reps ?? ""));
@@ -394,6 +473,24 @@ function EditableSetPill({
   const [weightInvalid, setWeightInvalid] = useState(false);
   const [error, setError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
+  // Long-press a set pill to delete it (instant, with an Undo toast).
+  const startPress = () => {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      onDelete();
+    }, 500);
+  };
+  const cancelPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+  useEffect(() => () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }, []);
 
   // Reset local state when entering edit mode
   useEffect(() => {
@@ -446,9 +543,18 @@ function EditableSetPill({
   if (!isEditing) {
     const pill = (
       <button
-        onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (longPressFired.current) { longPressFired.current = false; return; }
+          onStartEdit();
+        }}
+        onPointerDown={startPress}
+        onPointerUp={cancelPress}
+        onPointerLeave={cancelPress}
+        onPointerCancel={cancelPress}
+        onContextMenu={(e) => e.preventDefault()}
         className={cn(
-          "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+          "select-none rounded-full px-3 py-1 text-xs font-medium transition-colors",
           isPB
             ? "bg-[#FFFBEB] dark:bg-[#3D3400] text-secondary-foreground"
             : "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/60"
@@ -517,19 +623,21 @@ function EditableSetPill({
 /* ── Active Exercise Card ── */
 function ActiveExerciseCard({
   exerciseId, exerciseName, numSets, minReps, maxReps,
-  completedSets, onLogSet, onSwap, isSwapped, sessionId, sessionPBs,
+  completedSets, onLogSet, onSwap, isSwapped, sessionId, sessionPBs, onDeleteSet,
 }: {
   exerciseId: string; exerciseName: string; numSets: number;
   minReps: number; maxReps: number; completedSets: any[];
   onLogSet: (setNumber: number, reps: string, weight: string) => void;
   onSwap: () => void; isSwapped: boolean; sessionId: string;
   sessionPBs: Record<string, { exerciseName: string; weight: number; reps: number; setId: string }>;
+  onDeleteSet: (set: any) => void;
 }) {
   const { user } = useAuth();
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [addingSet, setAddingSet] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const nextSet = completedSets.length + 1;
   const allDone = completedSets.length >= numSets;
@@ -639,7 +747,7 @@ function ActiveExerciseCard({
     <div
       className={cn(
         "rounded-2xl bg-card border border-border/60 p-5 shadow-md transition-all duration-250 ease-in-out",
-        allDone && "opacity-60"
+        allDone && !addingSet && "opacity-60"
       )}
     >
       {/* Header row */}
@@ -679,6 +787,7 @@ function ActiveExerciseCard({
                 onCancelEdit={() => setEditingSetId(null)}
                 sessionId={sessionId}
                 isPB={isPB}
+                onDelete={() => onDeleteSet(s)}
               />
             );
           })}
@@ -686,7 +795,7 @@ function ActiveExerciseCard({
       )}
 
       {/* Next set input */}
-      {!allDone && (
+      {(!allDone || addingSet) ? (
         <div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground font-medium w-8 shrink-0">#{nextSet}</span>
@@ -724,6 +833,7 @@ function ActiveExerciseCard({
                   if (reps) {
                     onLogSet(nextSet, reps, weight);
                     setReps("");
+                    setAddingSet(false);
                   }
                 }
               }}
@@ -737,11 +847,20 @@ function ActiveExerciseCard({
             onClick={() => {
               onLogSet(nextSet, reps, weight);
               setReps("");
+              setAddingSet(false);
             }}
           >
             Log set
           </Button>
         </div>
+      ) : (
+        <button
+          onClick={() => setAddingSet(true)}
+          className="flex items-center justify-center gap-1.5 w-full min-h-[44px] rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Add a set
+        </button>
       )}
 
       {/* Exercise History Bottom Sheet */}
