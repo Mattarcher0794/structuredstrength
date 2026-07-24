@@ -34,10 +34,3 @@ release.
 ## Built with
 
 Lovable, TypeScript.
-
-## What I'd do differently
-
-[Two or three lines. Be specific and slightly critical: what the
-identification gets wrong, what the data model can't yet handle,
-what you'd need a real backend for. This paragraph does more work
-than the rest of the README combined.]
