@@ -1,73 +1,43 @@
-# Welcome to your Lovable project
+# Wildlog
 
-## Project info
+**Live at [wildlog.life](https://wildlog.life)**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Snap or upload a photo, get the species identified in seconds,
+and keep every sighting in a personal life list.
 
-## How can I edit this code?
+## Why
 
-There are several ways of editing your application.
+Wildlife ID apps generally optimise for the identification and
+treat the record as an afterthought. The interesting part is the
+list you build over time, not the single lookup. Wildlog treats
+the sighting as the primary object and identification as the way
+you create one.
 
-**Use Lovable**
+## What I owned
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Everything. The idea, the model of what a sighting is and what
+gets stored, the identification flow, the interface, and the
+release.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Product decisions worth noting
 
-**Use your preferred IDE**
+- **Identification returns a species, a habitat and one fact
+  worth knowing.** Three fields, not a wall of taxonomy. The
+  target user is curious, not scientific.
+- **Sighting saves in one action from the result screen.** Every
+  extra step between identification and record loses the entry,
+  which is the thing the product is actually for.
+- **Built as an installable web app rather than native.** Camera
+  access without an app store, and the whole thing ships in
+  evenings.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Built with
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Lovable, TypeScript.
 
-Follow these steps:
+## What I'd do differently
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[Two or three lines. Be specific and slightly critical: what the
+identification gets wrong, what the data model can't yet handle,
+what you'd need a real backend for. This paragraph does more work
+than the rest of the README combined.]
