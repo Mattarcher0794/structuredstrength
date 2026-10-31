@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2026-07-13
+> Last updated: 2026-10-31
 > Keep this doc updated after every session that changes schema, adds components, ships pending work, or deploys Edge Functions. This is the single source of truth passed between Claude instances.
 
 ---
@@ -78,6 +78,7 @@ React 18 + TypeScript + Vite PWA (not React Native), Supabase (Postgres + Auth +
 - GitHub: https://github.com/Mattarcher0794/structuredstrength
 - Main branch: main
 - Hosting: Vercel — production auto-deploys on push to `main` (project `structuredstrength`, URL https://structuredstrength.vercel.app)
+- Serverless functions: `/api/*.ts` (Vercel Node runtime, deployed by Vercel — NOT part of `bun run build`/Vite). `vercel.json` excludes `/api/` from the SPA rewrite. First/only function: `api/keep-alive.ts` — read-only Supabase ping run by a daily `vercel.json` cron (`0 8 * * *`) so the DB never hits the free-tier 7-day inactivity auto-pause. Crons run only on production (main) deploys
 - Local dev: `bun run dev` (port 8080)
 - Package manager: bun
 - Node version: v24.14.0
@@ -441,6 +442,7 @@ The package is in `package.json` and registered as `PreferencesPlugin` in `ios/A
 Full history: see CHANGELOG.md in repo root.
 
 Most recent change:
+| 2026-10-31 | docs/session-wrap-2026-07-13 | api/keep-alive.ts, vercel.json | Keep-alive cron — new read-only Vercel serverless function (`api/keep-alive.ts`) runs one PostgREST query against Supabase; `vercel.json` gains a daily cron (`0 8 * * *`) hitting `/api/keep-alive` to reset Supabase's free-tier 7-day inactivity auto-pause. Reuses `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`. NB: Vercel crons run only on production (main) deploys — inert until merged to main |
 | 2026-07-13 | feat/today-momentum | src/lib/streak.ts, src/pages/Today.tsx | UX momentum (WS-D) — on-plan streak (rest-forgiving computeSessionStreak, reuses resolveWeekSchedule; 7 tests) surfaced as a Flame badge on the "This week" card + an "on a roll" nudge at 3+. Rest days never break it |
 | 2026-07-13 | feat/micro-interactions | src/lib/motion.ts, src/pages/ActiveWorkout.tsx | UX micro-interactions (WS-B) — shared reduced-motion-aware motion presets; set pills pop-in on log / animate out on delete (AnimatePresence); rest timer gains a depleting circular progress ring |
 | 2026-07-13 | feat/ux-consistency-foundation | index.css, BackBar.tsx, WorkoutDetail/Profile/History/WeekStrip/+more | UX consistency foundation (WS-A) — accent colour CSS tokens (--pb-gold/--cardio/--strava) replacing hardcoded hex; shared BackBar component; destructive confirms standardised on ConfirmBottomSheet; WorkoutDetail loading skeleton; #C4899A→primary cleanup |
